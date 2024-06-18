@@ -56,18 +56,24 @@ class WebExplorer(Role):
 
     def initialize(self):
         try:
-            from taskweaver.ext_role.web_explorer.driver import SeleniumDriver
-            from taskweaver.ext_role.web_explorer.planner import VisionPlanner
+            from taskweaver.ext_role.web_explorer.driver import SeleniumDriver　　★ここで同じディレクトリにあるクラスを呼び出す。これがロールの役割になっている
+            from taskweaver.ext_role.web_explorer.planner import VisionPlanner　　★ここで同じディレクトリにあるクラスを呼び出す。これがロールの役割になっている
 
             config = read_yaml(self.config.config_file_path)
             GPT4V_KEY = self.config.gpt4v_key
             GPT4V_ENDPOINT = self.config.gpt4v_endpoint
+
+            ★クラスをインスタンス化
+            ★厳密にはタスクウィーバーでいうロールではないので、SeleniumDriverクラス の引数は自由に設計して良い
             self.driver = SeleniumDriver(
                 chrome_driver_path=self.config.chrome_driver_path,
                 chrome_executable_path=self.config.chrome_executable_path,
                 mobile_emulation=False,
                 js_script=config["js_script"],
             )
+
+            ★クラスをインスタンス化
+            ★厳密にはタスクウィーバーでいうロールではないので、VisionPlannerクラス の引数は自由に設計して良い
             self.vision_planner = VisionPlanner(
                 api_key=GPT4V_KEY,
                 endpoint=GPT4V_ENDPOINT,
@@ -80,9 +86,12 @@ class WebExplorer(Role):
             raise Exception(f"Failed to initialize the plugin due to: {e}")
 
     def reply(self, memory: Memory, **kwargs) -> Post:
-        if self.vision_planner is None:
+        if self.vision_planner is None:　　　★ロールがなければ初期化する
             self.initialize()
 
+        # ===========================================================================
+        # 定型文 開始
+        # ===========================================================================
         rounds = memory.get_role_rounds(
             role=self.alias,
             include_failure_rounds=False,
@@ -90,15 +99,38 @@ class WebExplorer(Role):
         last_post = rounds[-1].post_list[-1]
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         post_proxy.update_send_to(last_post.send_from)
+        # ===========================================================================
+        # 定型文 終了
+        # ===========================================================================
+
         try:
+
+            post_proxy.update_send_to(vision_planner alias) みたいなことを書いたら、 web_explorer -> vision_planner に渡ったように見えるかも。
+            その代わり、post_proxy.end() をリターンする直前に post_proxy.update_send_to(last_post.send_from) して、宛先をユーザーに戻すのを忘れないように。
+
             self.vision_planner.get_objective_done(
                 objective=last_post.message,
-                post_proxy=post_proxy,
+                post_proxy=post_proxy,　　　　　★vision_planner はロールの役割なので post_proxy を渡すことができる。ここでロールを呼び出しているのと同義
             )
+
         except Exception as e:
             self.logger.error(f"Failed to reply due to: {e}")
 
+
+        # ===========================================================================
+        # 定型文 開始
+        # ===========================================================================
+        # vision_planner の方に post_proxy を渡しているので、そっちでメッセージを更新している場合は、ここはコメントアウトしても良い。実際に vision_planner の方でメッセージを更新しているので、ここは本来は不要
+        post_proxy.update_message("ここも定型文。～～諸々終了したよ～～")
+
         return post_proxy.end()
+        # ===========================================================================
+        # 定型文 終了
+        # ===========================================================================
+
+
+
+
 
     def close(self) -> None:
         if self.driver is not None:

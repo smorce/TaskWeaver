@@ -1,131 +1,61 @@
+# ========================================================
+# メモ
+# ========================================================
+# 定型のタスクを実行するWebリサーチャーロールを作成中
+# 定型のタスク = マスターエージェントのランググラフ
+# つまり、Webリサーチャーロール = マスターエージェント
+
+
+# とりあえず完成したので、あとは Tavily のAPIキーを用意して TaskWeaver を GitHub にあげて、ローカルで動かしてみる
+# → Tavily のAPIキー は用意したので、GitHub にアップする
+# クイックスタート：https://github.com/microsoft/TaskWeaver
+# Web UI 起動方法
+# pip install -U chainlit
+# cd playground/UI/
+# chainlit run app.py
+
+
+
+# API キーの入力はmainで実行するときに以下のように入力すればOK
+# import os
+# os.environ["OPENAI_API_KEY"] = "～～～"
+# os.environ["GEMINI_API_KEY"] = "～～～"    # GEMINI_API_KEY でOK
+# os.environ["TAVILY_API_KEY"] = "～～～"    # Free のキーを入手した
+# os.environ["LANGCHAIN_API_KEY"] = "～～～"
+
+
+
+
+from dotenv import load_dotenv
 import asyncio
 import json
 import os
-import sys
-from contextlib import contextmanager
-from typing import Any, List, Tuple
+from uuid import uuid4
+import time
 
-import requests
+# Run with LangSmith if API key is set
+is_LangSmith = True
+if is_LangSmith:
+    unique_id = uuid4().hex[0:8]
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = f"Tracing Walkthrough - {unique_id}"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+    os.environ["LANGCHAIN_API_KEY"] = ""   # ★APIキーを入れる
+load_dotenv()
+
 from injector import inject
 
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
-from taskweaver.memory.attachment import AttachmentType
-from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.prompt_util import PromptUtil
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
 from taskweaver.role.role import RoleConfig, RoleEntry
-
-# response entry format: (title, url, snippet)
-ResponseEntry = Tuple[str, str, str]
-
-# suppress asyncio runtime warning
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-# suppress tqdm message
-os.environ["TQDM_DISABLE"] = "True"
+from taskweaver.utils import read_yaml
 
 
-@contextmanager
-def disable_tqdm():
-    # Save the original value of the TQDM_DISABLE environment variable
-    original_tqdm_disable = os.environ.get("TQDM_DISABLE", None)
 
-    # Set TQDM_DISABLE to 'True' to disable tqdm
-    os.environ["TQDM_DISABLE"] = "True"
-
-    try:
-        yield
-    finally:
-        # Restore the original TQDM_DISABLE value
-        if original_tqdm_disable is None:
-            del os.environ["TQDM_DISABLE"]
-        else:
-            os.environ["TQDM_DISABLE"] = original_tqdm_disable
-
-
-def browse_page(
-    query: str,
-    urls: List[str],
-    top_k: int = 3,
-    chunk_size: int = 1000,
-    chunk_overlap: int = 250,
-    post_proxy: PostEventProxy = None,
-) -> list[dict[str, Any]]:
-    try:
-        from langchain.text_splitter import RecursiveCharacterTextSplitter
-        from langchain_community.document_loaders import AsyncHtmlLoader
-        from langchain_community.document_transformers import Html2TextTransformer
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        from langchain_community.vectorstores import FAISS
-    except ImportError:
-        raise ImportError(
-            """Please install the following packages first:
-               pip install duckduckgo_search>=5.1.0
-               pip install langchain>=0.1.4
-               pip install langchain-community>=0.0.16
-               pip install beautifulsoup4>=4.12.2
-               pip install html2text>=2020.1.16
-               pip install faiss-cpu>=1.8.0
-               pip install sentence-transformers>=2.6.0
-            """,
-        )
-
-    post_proxy.update_attachment(
-        message="WebSearch is loading the pages...",
-        type=AttachmentType.text,
-    )
-
-    loader = AsyncHtmlLoader(web_path=urls, ignore_load_errors=True)
-    with disable_tqdm():
-        docs = loader.load()
-
-    post_proxy.update_attachment(
-        message="WebSearch is transforming the pages...",
-        type=AttachmentType.text,
-    )
-    html2text = Html2TextTransformer()
-    docs_transformed = html2text.transform_documents(docs)
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-    )
-
-    # Split
-    splits = text_splitter.split_documents(docs_transformed)
-
-    post_proxy.update_attachment(
-        message="WebSearch is indexing the pages...",
-        type=AttachmentType.text,
-    )
-    vector_store = FAISS.from_documents(
-        splits,
-        HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"),
-    )
-
-    post_proxy.update_attachment(
-        message=f"WebSearch is querying the pages on {query}...",
-        type=AttachmentType.text,
-    )
-    result = vector_store.similarity_search(
-        query=query,
-        k=top_k,
-    )
-
-    chunks = [
-        {
-            "metadata": r.metadata,
-            "snippet": r.page_content,
-        }
-        for r in result
-    ]
-
-    return chunks
-
-
+# GPT-researcher に変えたので使っていないが、残しておく
 class WebSearchConfig(RoleConfig):
     def _configure(self):
         self.api_provider = self._get_str("api_provider", "duckduckgo")
@@ -133,6 +63,11 @@ class WebSearchConfig(RoleConfig):
         self.google_api_key = self._get_str("google_api_key", "")
         self.google_search_engine_id = self._get_str("google_search_engine_id", "")
         self.bing_api_key = self._get_str("bing_api_key", "")
+
+
+# 使用例
+# WebSearchConfig = WebSearchConfig('web_search_config.yaml')
+# aaa = WebSearch(WebSearchConfig, logger, tracing, event_emitter, role_entry)
 
 
 class WebSearch(Role):
@@ -146,27 +81,83 @@ class WebSearch(Role):
         role_entry: RoleEntry,
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
-
+        
+        # --------------------------------------------------------
+        # GPT-researcher に変えたので使っていないが、残しておく
         self.api_provider = config.api_provider
         self.result_count = config.result_count
         self.google_api_key = config.google_api_key
         self.google_search_engine_id = config.google_search_engine_id
         self.bing_api_key = config.bing_api_key
+        # --------------------------------------------------------
 
-    def close(self) -> None:
-        super().close()
 
-    def search_query(self, query: str) -> List[ResponseEntry]:
-        if self.api_provider == "google":
-            return self._search_google_custom_search(query, cnt=self.result_count)
-        elif self.api_provider == "bing":
-            return self._search_bing(query, cnt=self.result_count)
-        elif self.api_provider == "duckduckgo":
-            return self._search_duckduckgo(query, cnt=self.result_count)
-        else:
-            raise ValueError("Invalid API provider. Please check your config file.")
+        self.logger = logger  # https://microsoft.github.io/TaskWeaver/docs/advanced/telemetry。デフォルトはFalse
+        self.writer = None
+        self.editor = None
+        self.researcher = None    # GPT-researcher を使っている。元々あった Agent がこれで、そこにその他のマルチエージェントが足された。マルチエージェントで使うモデルは task.json に書かれ、self.researcher の設定は config に書かれている
+        self.publisher = None
+        self.powerpointdesigner = None
+        self.output_dir = None
+        self.task = None
+
+
+
+    def init_research_team(self):
+        try:
+            from taskweaver.ext_role.web_search.writer import WriterAgent
+            from taskweaver.ext_role.web_search.editor import EditorAgent
+            from taskweaver.ext_role.web_search.researcher import ResearchAgent
+            from taskweaver.ext_role.web_search.publisher import PublisherAgent
+
+            from langgraph.graph import StateGraph, END
+            from .utils.views import print_agent_output
+            from memory.research import ResearchState
+
+
+            with open('task.json', 'r') as f:
+                task = json.load(f)
+
+            self.task_id = int(time.time()) # Currently time based, but can be any unique identifier
+            self.output_dir = f"./outputs/run_{self.task_id}_{task.get('query')[0:40]}"
+            self.task = task
+            os.makedirs(self.output_dir, exist_ok=True)
+
+            # エージェントの初期化
+            self.writer = WriterAgent()
+            self.editor = EditorAgent(self.task)
+            self.researcher = ResearchAgent()
+            self.publisher = PublisherAgent(self.output_dir)
+
+            
+            # ResearchState を持つ Langchain StateGraph を定義
+            workflow = StateGraph(ResearchState)
+
+            # Add nodes for each agent
+            workflow.add_node("browser",    self.researcher.run_initial_research)
+            workflow.add_node("planner",    self.editor.plan_research)
+            workflow.add_node("researcher", self.editor.run_parallel_research)
+            workflow.add_node("writer",     self.writer.run)
+            workflow.add_node("publisher",  self.publisher.run)
+
+            workflow.add_edge('browser',    'planner')
+            workflow.add_edge('planner',    'researcher')
+            workflow.add_edge('researcher', 'writer')
+            workflow.add_edge('writer',     'publisher')
+
+            # set up start and end nodes
+            workflow.set_entry_point("browser")
+            workflow.add_edge('publisher', END)
+
+            return workflow
+
+        except Exception as e:
+            raise Exception(f"Failed to initialize the plugin due to: {e}")
 
     def reply(self, memory: Memory, **kwargs) -> Post:
+        if self.writer is None:
+            research_team = self.init_research_team()
+
         rounds = memory.get_role_rounds(
             role=self.alias,
             include_failure_rounds=False,
@@ -175,65 +166,34 @@ class WebSearch(Role):
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         post_proxy.update_send_to(last_post.send_from)
 
-        message = last_post.message
-        if "|" in message:
-            queries = message.split("|")
-        else:
-            queries = [message]
 
-        query_results = []
-        query_urls = set()
-        for query in queries:
-            query_results.extend([r for r in self.search_query(query) if r[1] not in query_urls])
-            query_urls.update([r[1] for r in query_results])
+        try:
+            # グラフをコンパイルする
+            chain = research_team.compile()
 
-        post_proxy.update_message(
-            f"WebSearch has done searching for `{queries}`.\n"
-            + PromptUtil.wrap_text_with_delimiter(
-                "\n```json\n"
-                + json.dumps(
-                    browse_page(",".join(queries), list(query_urls), post_proxy=post_proxy),
-                    indent=4,
-                )
-                + "```\n",
-                PromptUtil.DELIMITER_TEMPORAL,
-            ),
-        )
+            print_agent_output(f"Starting the research process for query '{self.task.get('query')}'...", "MASTER")
+            
+            # リサーチグラフの実行
+            # Publisher の generate_layout で作成した layout が result["report"] に格納されている
+            result = await chain.ainvoke({"task": self.task, "post_proxy": post_proxy})     # ★ research_agent.run_initial_research に {"task": self.task} という辞書を渡している。ココで初期計画が立案される。
+                                                                                            # ★ post_proxy も渡せるように改造する。
+            # post_proxy のアップデート
+            post_proxy = result.get("post_proxy")
 
+            # 調査が完了した後にパワーポイントデザイナーを呼び出す
+            from taskweaver.ext_role.web_search.powerpointdesigner import PowerPointDesignerAgent
+            powerpointdesigner = PowerPointDesignerAgent(self.output_dir)
+            post_proxy = powerpointdesigner.run(post_proxy)                                  # output_dir からマークダウンファイルを読み込む。
+
+        except Exception as e:
+            self.logger.error(f"Failed to reply due to: {e}")
+
+        
         return post_proxy.end()
 
-    def _search_google_custom_search(self, query: str, cnt: int) -> List[ResponseEntry]:
-        url = (
-            f"https://www.googleapis.com/customsearch/v1?key={self.google_api_key}&"
-            f"cx={self.google_search_engine_id}&q={query}"
-        )
-        if cnt > 0:
-            url += f"&num={cnt}"
-        response = requests.get(url)
-        result_list: List[ResponseEntry] = []
-        for item in response.json()["items"]:
-            result_list.append((item["title"], item["link"], item["snippet"]))
-        return result_list
 
-    def _search_bing(self, query: str, cnt: int) -> List[ResponseEntry]:
-        url = f"https://api.bing.microsoft.com/v7.0/search?q={query}"
-        if cnt > 0:
-            url += f"&count={cnt}"
-        response = requests.get(url, headers={"Ocp-Apim-Subscription-Key": self.bing_api_key})
-        result_list: List[ResponseEntry] = []
-        for item in response.json()["webPages"]["value"]:
-            result_list.append((item["name"], item["url"], item["snippet"]))
-        return result_list
 
-    @staticmethod
-    def _search_duckduckgo(query: str, cnt: int) -> List[ResponseEntry]:
-        try:
-            from duckduckgo_search import DDGS
-        except ImportError:
-            raise ImportError("Please install duckduckgo-search first.")
-
-        results = DDGS().text(keywords=query, max_results=cnt)
-        result_list: List[ResponseEntry] = []
-        for result in results:
-            result_list.append((result["title"], result["href"], result["body"]))
-        return result_list
+    # def close(self) -> None:
+    #     if self.driver is not None:
+    #         self.driver.quit()
+    #     super().close()

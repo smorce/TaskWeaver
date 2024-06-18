@@ -1,0 +1,19 @@
+{
+  "query": "Y Combinatorに関連する最新のニュースを集めて詳細をレポートしてください。",
+  "max_sections": 3,
+  "publish_formats": {
+    "markdown": true,
+    "pdf": true,
+    "docx": true
+  },
+  "follow_guidelines": false,
+  # 以下のmodelは web_search/utils/llms.py に関係あり。LLM は OpenRouter を使うようにしたので、そのやり方で指定する。リサーチャー以外の マルチエージェント は全て共通で以下の LLM が呼ばれる
+  # リサーチャーだけ異なる実装なので、使う LLM は config.py で設定する。
+  "model": "google/gemini-flash-1.5",
+  "guidelines": [
+    "The report MUST be written in APA format",
+    "Each sub section MUST include supporting sources using hyperlinks. If none exist, erase the sub section or rewrite it to be a part of the previous section",
+    "The report MUST be written in spanish"
+  ],
+  "verbose": true
+}
