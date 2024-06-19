@@ -54,6 +54,14 @@ from taskweaver.role.role import RoleConfig, RoleEntry
 from taskweaver.utils import read_yaml
 
 
+# 元のコード。一旦消してみる。
+# suppress asyncio runtime warning
+# if sys.platform == "win32":
+#     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# # suppress tqdm message
+# os.environ["TQDM_DISABLE"] = "True"
+
 
 # GPT-researcher に変えたので使っていないが、残しておく
 class WebSearchConfig(RoleConfig):
@@ -154,7 +162,7 @@ class WebSearch(Role):
         except Exception as e:
             raise Exception(f"Failed to initialize the plugin due to: {e}")
 
-    def reply(self, memory: Memory, **kwargs) -> Post:
+    async def reply(self, memory: Memory, **kwargs) -> Post:           # [2024/06/19]await chain.ainvoke なので、async をつけてみた
         if self.writer is None:
             research_team = self.init_research_team()
 

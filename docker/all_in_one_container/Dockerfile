@@ -21,13 +21,40 @@ ARG WITH_WEB_SEARCH=true
 COPY docker/all_in_one_container/model_downloader.py .
 # Install the web search dependencies
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
-    pip install --no-cache-dir --no-warn-script-location "duckduckgo_search>=5.1.0" \
-    "langchain>=0.1.4" \
-    "langchain-community>=0.0.16" \
-    "beautifulsoup4>=4.12.2" \
-    "html2text>=2020.1.16" \
-    "faiss-cpu>=1.8.0" \
-    "sentence-transformers>=2.6.0"; \
+    pip install --no-cache-dir --no-warn-script-location "duckduckgo_search>=6.1.5" \
+    "beautifulsoup4" \
+    "md2pdf" \
+    "playwright" \
+    "pydantic" \
+    "python-multipart" \
+    "markdown" \
+    "langchain>=0.2,<0.3" \    
+    "langchain_community>=0.2,<0.3" \
+    "langchain-openai>=0.1,<0.2" \
+    "langchain-google-genai>=1,<2" \
+    "langchain-groq>=0.1,<0.2" \
+    "langchain_anthropic>=0.1,<0.2" \
+    "langchain_mistralai>=0.1,<0.2" \
+    "langchain_huggingface>=0.0.1,<0.1" \
+    "langchain_together>=0.1,<0.2" \
+    "langchain_cohere" \
+    "langchain_google_vertexai" \
+    "langchain_fireworks" \
+    "langchain_aws" \
+    "tavily-python" \
+    "arxiv" \
+    "PyMuPDF" \
+    "jinja2" \
+    "aiofiles" \
+    "newspaper3k" \
+    "SQLAlchemy" \
+    "mistune" \
+    "python-docx" \
+    "htmldocx" \
+    "lxml[html_clean]" \
+    "websockets" \
+    "unstructured" \
+    "json_repair"; \
     python model_downloader.py; \
     fi
 
@@ -48,5 +75,3 @@ RUN pip install --no-cache-dir --no-warn-script-location zhipuai
 RUN pip install --no-cache-dir --no-warn-script-location dashscope
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-
-
