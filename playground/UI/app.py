@@ -279,7 +279,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
             post_id: ポストの一意識別子です。
             round_id: 関連するラウンドのIDです。
             **kwargs: その他の任意のキーワード引数で、特定のシナリオで使用される追加情報を含むことができます。
-        
+
         イベントタイプに基づく処理
             post_start: ポストの開始イベント。現在のステップをリセットし、新しいcl.Stepを初期化します。このステップは入力表示が可能で、ルートではありません。
             post_end: ポストの終了イベント。現在のステップの情報をストリーミングし、その後ステップを終了します。最後に、現在のステップをリセットします。
@@ -288,26 +288,36 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
             post_send_to_update: メッセージ送信先の更新イベント。送信先役割を更新します。
             post_message_update: メッセージ内容の更新イベント。メッセージを累積し、メッセージの終了フラグが立っているかどうかをチェックします。
             post_status_update: ポストのステータス更新イベント。ステータスメッセージを更新します。
-        
+
         最後の更新処理
             ステップが有効であれば（cur_step is not None）、現在のポストの本文をフォーマットしてストリームします。
             メッセージが終了しており、まだ送信されていない場合、メッセージをステップの要素に追加して、ステップを更新します。
 
         """
 
-
         print("デバッグ1")
-        print("cur_step")
-        print(cur_step)
-        print()
-        print("extra")
-        print(extra)
+        try:
+            print("cur_step")
+            print(self.cur_step)
+            print()
+        except Exception:
+            print("cur_step はなかった")
+            print()
+
+        try:
+            print("extra")
+            print(extra)
+            print()
+        except Exception:
+            print("extra はなかった")
+            print()
 
 
         if type == PostEventType.post_start:
             # ポスト開始イベントの処理
             self.reset_cur_step()
-            self.cur_step = cl.Step(name=extra["role"], show_input=True, root=False)
+            # self.cur_step = cl.Step(name=extra["role"], show_input=True, root=False)
+            self.cur_step = cl.Step(name=extra["role"], show_input=True)    # [破壊的変更に対応] root が False だったので単純に消した
             cl.run_sync(self.cur_step.__aenter__())
         elif type == PostEventType.post_end:
             # ポスト終了イベントの処理
@@ -636,7 +646,29 @@ async def main(message: cl.Message):
     session_cwd_path = session.execution_cwd
 
     # ローダーを表示しながらメッセージを送信
-    async with cl.Step(name="", show_input=True, root=True) as root_step:
+    # async with cl.Step(name="", show_input=True, root=True) as root_step:
+    #     response_round = await cl.make_async(session.send_message)(
+    #         message.content,
+    #         files=[
+    #             {
+    #                 "name": element.name if element.name else "file",
+    #                 "path": element.path,
+    #             }
+    #             for element in message.elements
+    #             if element.type == "file" or element.type == "image"
+    #         ],
+    #         event_handler=ChainLitMessageUpdater(root_step),      # これがイベントハンドラー
+    #     )
+
+    # メッセージを作成して送信
+    # cl.Messageのインスタンスを作成し、cl.Message を使用してルートレベルのメッセージを送信し、cl.Step をネストする必要がある
+    root_message = cl.Message(content=message.content)
+    await root_message.send()
+
+    # 以下の Step クラスから root が削除される破壊的変更に対応した
+    # https://github.com/Chainlit/chainlit/releases/tag/1.1.300rc0
+    # ステップを実行
+    async with cl.Step(name="", show_input=True) as root_step:
         response_round = await cl.make_async(session.send_message)(
             message.content,
             files=[
