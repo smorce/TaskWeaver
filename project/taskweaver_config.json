@@ -1,5 +1,53 @@
 {
-  "llm.api_base": "https://api.openai.com/v1",
-  "llm.api_key": "",
-  "llm.model": "gpt-4-1106-preview"
+  "llm.api_type":"openai",
+  "llm.api_base": "https://openrouter.ai/api/v1",
+  "llm.api_key": "YOUR_API_KEY",
+  "llm.model": "microsoft/phi-3-mini-128k-instruct:free",
+  "llm.response_format": "",
+  "session.roles": ["planner", "code_interpreter", "web_search"],
+  "ext_llms.llm_configs": {
+      "llm_A":
+          {
+              "llm.api_type": "openai",
+              "llm.api_base": "https://openrouter.ai/api/v1",
+              "llm.api_key": "YOUR_API_KEY",
+              "llm.model": "microsoft/phi-3-mini-128k-instruct:free",
+          },
+      "llm_B":
+          {
+              "llm.api_type": "google_genai",
+              "llm.api_key": "YOUR_API_KEY",
+              "llm.model": "gemini-1.5-flash-latest",
+          },
+        "llm_C":
+          {
+              "llm.api_type": "google_genai",
+              "llm.api_key": "YOUR_API_KEY",
+              "llm.model": "gemini-1.5-pro-latest",
+          },
+        "llm_D":
+          {
+              "llm.api_type": "openai",
+              "llm.api_base": "https://openrouter.ai/api/v1",
+              "llm.api_key": "YOUR_API_KEY",
+              "llm.model": "openai/gpt-4o",
+              "llm.response_format": "json_object",
+          },
+        "llm_E":
+          {
+              "llm.api_type": "openai",
+              "llm.api_base": "https://openrouter.ai/api/v1",
+              "llm.api_key": "YOUR_API_KEY",
+              "llm.model": "anthropic/claude-3-haiku",
+              "llm.response_format": "json_object",
+          },
+        "llm_F":
+          {
+              "llm.api_type": "openai",
+              "llm.api_base": "https://openrouter.ai/api/v1",
+              "llm.api_key": "YOUR_API_KEY",
+              "llm.model": "deepseek/deepseek-coder",
+              "llm.response_format": "json_object",
+          },
+    },
 }

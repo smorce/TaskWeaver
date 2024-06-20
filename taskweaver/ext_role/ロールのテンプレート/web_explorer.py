@@ -21,6 +21,7 @@ from taskweaver.role import Role
 from taskweaver.role.role import RoleConfig, RoleEntry
 from taskweaver.utils import read_yaml
 
+from taskweaver.llm import LLMApi
 
 class WebExplorerConfig(RoleConfig):
     def _configure(self):
@@ -31,6 +32,9 @@ class WebExplorerConfig(RoleConfig):
                 "web_explorer_config.yaml",
             ),
         )
+        # 追加
+        self._set_name("web_search")  # これが config で設定する名前なので、 taskweaver_config には "web_search.llm_alias": "llm_C" と書けばOK
+
         self.gpt4v_key = self._get_str("gpt4v_key", "")                 # GPT4 V → Haiku で良さそう
         self.gpt4v_endpoint = self._get_str("gpt4v_endpoint", "")
         self.chrome_driver_path = self._get_str("chrome_driver_path", "")
@@ -45,9 +49,13 @@ class WebExplorer(Role):
         logger: TelemetryLogger,
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
+        llm_api: LLMApi,          # 追加
         role_entry: RoleEntry,
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
+        # 追加
+        self.alias = "WebSearch"    # これは web_search.role.yaml の alias
+        self.llm_api = llm_api
 
         self.logger = logger
         self.config = config
@@ -115,6 +123,26 @@ class WebExplorer(Role):
 
         except Exception as e:
             self.logger.error(f"Failed to reply due to: {e}")
+
+
+        # LLM の使い方
+        try:
+
+            # ===========================================================================
+            # TaskWeaver/project/taskweaver_config.json で設定した LLM はこうやって使う
+            # ===========================================================================
+            # ざっくり以下のイメージ。 chat_history とかは taskweaver/planner/planner.py を参考に。
+            llm_stream = self.llm_api.chat_completion_stream(
+                chat_history,
+                use_smoother=True,
+                llm_alias=self.config.llm_alias,   # ココで llm_C を設定している。上記の self._set_name で設定した LLM が使われる
+            )
+
+        except Exception as e:
+            self.logger.error(f"Failed to calling LLM: {e}")
+
+
+
 
 
         # ===========================================================================
