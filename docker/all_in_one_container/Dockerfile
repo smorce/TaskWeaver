@@ -12,7 +12,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --no-warn-script-location -r requirements.txt
 
-RUN pip install --no-cache-dir --no-warn-script-location chainlit
+RUN pip install --no-cache-dir --no-warn-script-location -U "chainlit<1.1.300"
 
 # Define a build argument
 ARG WITH_WEB_SEARCH=true
@@ -28,7 +28,7 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "pydantic" \
     "python-multipart" \
     "markdown" \
-    "langchain>=0.2,<0.3" \    
+    "langchain>=0.2,<0.3" \
     "langchain_community>=0.2,<0.3" \
     "langchain-openai>=0.1,<0.2" \
     "langchain-google-genai>=1,<2" \

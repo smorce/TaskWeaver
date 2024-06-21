@@ -316,8 +316,8 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         if type == PostEventType.post_start:
             # ポスト開始イベントの処理
             self.reset_cur_step()
-            # self.cur_step = cl.Step(name=extra["role"], show_input=True, root=False)
-            self.cur_step = cl.Step(name=extra["role"], show_input=True)    # [破壊的変更に対応] root が False だったので単純に消した
+            self.cur_step = cl.Step(name=extra["role"], show_input=True, root=False)
+            # self.cur_step = cl.Step(name=extra["role"], show_input=True)    # [破壊的変更に対応] root が False だったので単純に消した → やっぱり戻した
             cl.run_sync(self.cur_step.__aenter__())
         elif type == PostEventType.post_end:
             # ポスト終了イベントの処理
@@ -645,30 +645,10 @@ async def main(message: cl.Message):
     # セッションで使用する作業ディレクトリのパスを取得
     session_cwd_path = session.execution_cwd
 
-    # ローダーを表示しながらメッセージを送信
-    # async with cl.Step(name="", show_input=True, root=True) as root_step:
-    #     response_round = await cl.make_async(session.send_message)(
-    #         message.content,
-    #         files=[
-    #             {
-    #                 "name": element.name if element.name else "file",
-    #                 "path": element.path,
-    #             }
-    #             for element in message.elements
-    #             if element.type == "file" or element.type == "image"
-    #         ],
-    #         event_handler=ChainLitMessageUpdater(root_step),      # これがイベントハンドラー
-    #     )
-
-    # メッセージを作成して送信
-    # cl.Messageのインスタンスを作成し、cl.Message を使用してルートレベルのメッセージを送信し、cl.Step をネストする必要がある
-    root_message = cl.Message(content=message.content)
-    await root_message.send()
-
-    # 以下の Step クラスから root が削除される破壊的変更に対応した
-    # https://github.com/Chainlit/chainlit/releases/tag/1.1.300rc0
-    # ステップを実行
-    async with cl.Step(name="", show_input=True) as root_step:
+    # ステップを表示しながらメッセージを送信
+    async with cl.Step(name="", show_input=True, root=True) as root_step:
+        # ココのメインの処理は session クラスの send_message メソッド
+        # cl.make_async で send_message メソッドを非同期で実行している
         response_round = await cl.make_async(session.send_message)(
             message.content,
             files=[
@@ -679,8 +659,33 @@ async def main(message: cl.Message):
                 for element in message.elements
                 if element.type == "file" or element.type == "image"
             ],
-            event_handler=ChainLitMessageUpdater(root_step),      # これがイベントハンドラー
+            event_handler=ChainLitMessageUpdater(root_step),      # これがイベントハンドラー。send_message メソッドが処理の各段階で適切なイベントを発火させ、それに応じてイベントハンドラーとして渡した ChainLitMessageUpdater クラスのメソッドが自動的に呼び出される
         )
+
+    # やっぱり止めて戻した
+    # メッセージを作成して送信
+    # cl.Messageのインスタンスを作成し、cl.Message を使用してルートレベルのメッセージを送信し、cl.Step をネストする必要がある
+    # root_message = cl.Message(content=message.content)
+    # await root_message.send()
+
+    # 以下の Step クラスから root が削除される破壊的変更に対応したが、やっぱり戻した
+    # https://github.com/Chainlit/chainlit/releases/tag/1.1.300rc0
+    # ステップを実行
+    # async with cl.Step(name="", show_input=True) as root_step:
+    #     # ココのメインの処理は session クラスの send_message メソッド
+    #     # cl.make_async で send_message メソッドを非同期で実行している
+    #     response_round = await cl.make_async(session.send_message)(
+    #         message.content,
+    #         files=[
+    #             {
+    #                 "name": element.name if element.name else "file",
+    #                 "path": element.path,
+    #             }
+    #             for element in message.elements
+    #             if element.type == "file" or element.type == "image"
+    #         ],
+    #         event_handler=ChainLitMessageUpdater(root_step),      # これがイベントハンドラー。send_message メソッドが処理の各段階で適切なイベントを発火させ、それに応じてイベントハンドラーとして渡した ChainLitMessageUpdater クラスのメソッドが自動的に呼び出される
+    #     )
 
     # 応答からアーティファクトのパスを抽出
     artifact_paths = [
