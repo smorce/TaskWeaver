@@ -1,3 +1,13 @@
+## メモ
+パッケージが環境にない場合は、インストールしてください。<br>
+pip install -U "chainlit<1.1.300"<br>
+<br>
+Chainlitにはバージョン1.1.300のメジャーアップデートがあり、互換性の問題が発生する可能性があります。 正しいバージョンがインストールされていることを確認してください。<br>
+<br>
+<br>
+<br>
+
+
 <h1 align="center">
     <img src="./.asset/logo.color.svg" width="45" /> TaskWeaver
 </h1>

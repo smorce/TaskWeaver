@@ -12,7 +12,23 @@ docker run -it \
   --entrypoint /app/entrypoint_chainlit.sh \
   --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
   taskweavercontainers/taskweaver-all-in-one:0.2
-  
+
+
+
+======================================
+openai/gpt-4o
+======================================
+docker run -it \
+  -e LLM_API_BASE="https://openrouter.ai/api/v1" \
+  -e LLM_API_KEY=$LLM_API_KEY \
+  -e LLM_API_TYPE="openai" \
+  -e LLM_MODEL="openai/gpt-4o" \
+  -p 8000:8000 \
+  --entrypoint /app/entrypoint_chainlit.sh \
+  --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
+  taskweavercontainers/taskweaver-all-in-one:0.2
+
+
 
 ======================================
 Gemini 1.5 Flash
