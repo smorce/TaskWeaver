@@ -1,0 +1,34 @@
+■ 起動方法
+GUI で Docker を止めてから以下を実行
+======================================
+phi-3-mini-128k-instruct:free
+======================================
+docker run -it \
+  -e LLM_API_BASE="https://openrouter.ai/api/v1" \
+  -e LLM_API_KEY=$LLM_API_KEY \
+  -e LLM_API_TYPE="openai" \
+  -e LLM_MODEL="microsoft/phi-3-mini-128k-instruct:free" \
+  -p 8000:8000 \
+  --entrypoint /app/entrypoint_chainlit.sh \
+  --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
+  taskweavercontainers/taskweaver-all-in-one:0.2
+  
+
+======================================
+Gemini 1.5 Flash
+======================================
+docker run -it \
+  -e LLM_API_TYPE="google_genai" \
+  -e LLM_GOOGLE_GENAI_API_KEY="AIzaSyC9fsXI7zEmGTem-1Lmq7yLNCayCHN22dE" \
+  -e LLM_GOOGLE_GENAI_MODEL="gemini-1.5-flash-latest" \
+  -p 8000:8000 \
+  --entrypoint /app/entrypoint_chainlit.sh \
+  --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
+  taskweavercontainers/taskweaver-all-in-one:0.2
+
+
+
+
+
+
+

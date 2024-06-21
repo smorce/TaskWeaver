@@ -645,7 +645,7 @@ async def main(message: cl.Message):
     # セッションで使用する作業ディレクトリのパスを取得
     session_cwd_path = session.execution_cwd
 
-    # ステップを表示しながらメッセージを送信
+    # ステップを表示しながらメッセージを送信。逐次的に更新して表示するのはココ
     async with cl.Step(name="", show_input=True, root=True) as root_step:
         # ココのメインの処理は session クラスの send_message メソッド
         # cl.make_async で send_message メソッドを非同期で実行している
