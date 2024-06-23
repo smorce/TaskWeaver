@@ -54,6 +54,7 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "lxml[html_clean]" \
     "websockets" \
     "unstructured" \
+    "json5" \
     "json_repair"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \

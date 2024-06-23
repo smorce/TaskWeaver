@@ -37,12 +37,36 @@ docker run -it \
   -e LLM_API_TYPE="google_genai" \
   -e LLM_GOOGLE_GENAI_API_KEY=$LLM_GOOGLE_GENAI_API_KEY \
   -e LLM_GOOGLE_GENAI_MODEL="gemini-1.5-flash-latest" \
+  -e LANGCHAIN_API_KEY=$LANGCHAIN_API_KEY \
+  -e TAVILY_API_KEY=$TAVILY_API_KEY \
   -p 8000:8000 \
   --entrypoint /app/entrypoint_chainlit.sh \
   --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
   taskweavercontainers/taskweaver-all-in-one:0.2-ws
 
 
+
+
+
+
+
+export LLM_API_KEY="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"
+export LANGCHAIN_API_KEY="ls__1985a1d1c91e4d9e9dd4114324c1d655"
+export TAVILY_API_KEY="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"
+source ~/.bashrc
+echo $LLM_API_KEY
+
+
+
+
+■TaskWeaver-Production
+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
+
+■LANGCHAIN_API_KEY（MIO のアドレスで登録済み）
+ls__1985a1d1c91e4d9e9dd4114324c1d655
+
+■Tavily API KEY（Free）
+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
 
 
 
