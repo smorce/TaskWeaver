@@ -11,7 +11,7 @@ docker run -it \
   -p 8000:8000 \
   --entrypoint /app/entrypoint_chainlit.sh \
   --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
-  taskweavercontainers/taskweaver-all-in-one:0.2
+  taskweavercontainers/taskweaver-all-in-one:0.2-ws
 
 
 
@@ -26,7 +26,7 @@ docker run -it \
   -p 8000:8000 \
   --entrypoint /app/entrypoint_chainlit.sh \
   --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
-  taskweavercontainers/taskweaver-all-in-one:0.2
+  taskweavercontainers/taskweaver-all-in-one:0.2-ws
 
 
 
@@ -35,13 +35,12 @@ Gemini 1.5 Flash
 ======================================
 docker run -it \
   -e LLM_API_TYPE="google_genai" \
-  -e LLM_GOOGLE_GENAI_API_KEY="AIzaSyC9fsXI7zEmGTem-1Lmq7yLNCayCHN22dE" \
+  -e LLM_GOOGLE_GENAI_API_KEY=$LLM_GOOGLE_GENAI_API_KEY \
   -e LLM_GOOGLE_GENAI_MODEL="gemini-1.5-flash-latest" \
   -p 8000:8000 \
   --entrypoint /app/entrypoint_chainlit.sh \
   --mount type=bind,source='/Users/st/Library/CloudStorage/OneDrive-個人用/development/TaskWeaver/project',target=/app/TaskWeaver/project/ \
-  taskweavercontainers/taskweaver-all-in-one:0.2
-
+  taskweavercontainers/taskweaver-all-in-one:0.2-ws
 
 
 

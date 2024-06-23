@@ -55,6 +55,11 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "websockets" \
     "unstructured" \
     "json_repair"; \
+    fi
+RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
+    pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "sentence_transformers"; \
+    fi
+RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     python model_downloader.py; \
     fi
 

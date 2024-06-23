@@ -25,7 +25,7 @@
 
 
 
-
+import asyncio
 from dotenv import load_dotenv
 import asyncio
 import json
@@ -89,7 +89,7 @@ class WebSearch(Role):
         role_entry: RoleEntry,
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
-        
+
         # --------------------------------------------------------
         # GPT-researcher に変えたので使っていないが、残しておく
         self.api_provider = config.api_provider
@@ -137,7 +137,7 @@ class WebSearch(Role):
             self.researcher = ResearchAgent()
             self.publisher = PublisherAgent(self.output_dir)
 
-            
+
             # ResearchState を持つ Langchain StateGraph を定義
             workflow = StateGraph(ResearchState)
 
@@ -162,7 +162,7 @@ class WebSearch(Role):
         except Exception as e:
             raise Exception(f"Failed to initialize the plugin due to: {e}")
 
-    async def reply(self, memory: Memory, **kwargs) -> Post:           # [2024/06/19]await chain.ainvoke なので、async をつけてみた
+    def reply(self, memory: Memory, **kwargs) -> Post:           # [2024/06/23] マルチエージェントは順番に実行して結果を繋げていく設計なので、 reply メソッドは同期関数でないといけない
         if self.writer is None:
             research_team = self.init_research_team()
 
@@ -174,17 +174,59 @@ class WebSearch(Role):
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         post_proxy.update_send_to(last_post.send_from)
 
+        async def async_research(chain, task, post_proxy):
+            """
+            非同期でリサーチグラフを実行する関数。
+
+            Args:
+                chain: GPTリサーチャーの LangGraph オブジェクト。
+                task: タスク情報を含む辞書。
+                post_proxy: PostProxyオブジェクト。
+
+            Returns:
+                リサーチグラフを実行した結果
+            """
+            # リサーチグラフの実行
+            # Publisher の generate_layout で作成した layout が result["report"] に格納されている
+            result = await chain.ainvoke({"task": task, "post_proxy": post_proxy})          # ★ research_agent.run_initial_research に {"task": self.task} という辞書を渡している。ココで初期計画が立案される。
+                                                                                            # ★ post_proxy も渡せるように改造する。
+            return result
+
+
+        def run_async_in_loop(coro):
+            """
+            既存のイベントループ内で非同期コルーチンを実行する関数。
+                1. asyncio.get_event_loop を使って現在のイベントループを取得します。
+                2. イベントループが既に走っているかどうかを確認します (loop.is_running()).
+                3. 走っている場合、asyncio.ensure_future を使って非同期コルーチンをタスクとしてスケジュールし、その結果を loop.run_until_complete を使って待機します。
+                4. 走っていない場合、そのまま loop.run_until_complete を使って非同期コルーチンを実行します。
+
+            Args:
+                coro: 実行する非同期コルーチン。
+
+            Returns:
+                任意: コルーチンの実行結果。
+            """
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 既存のイベントループが実行中の場合、コルーチンをタスクとしてスケジュールし、完了を待機
+                future = asyncio.ensure_future(coro)
+                loop.run_until_complete(future)
+                return future.result()
+            else:
+                # 既存のイベントループが実行中でない場合、そのままコルーチンを実行
+                return loop.run_until_complete(coro)
+
 
         try:
             # グラフをコンパイルする
             chain = research_team.compile()
 
             print_agent_output(f"Starting the research process for query '{self.task.get('query')}'...", "MASTER")
-            
-            # リサーチグラフの実行
-            # Publisher の generate_layout で作成した layout が result["report"] に格納されている
-            result = await chain.ainvoke({"task": self.task, "post_proxy": post_proxy})     # ★ research_agent.run_initial_research に {"task": self.task} という辞書を渡している。ココで初期計画が立案される。
-                                                                                            # ★ post_proxy も渡せるように改造する。
+
+            # 非同期処理を実行
+            result = run_async_in_loop(async_research(chain, self.task, post_proxy))
+
             # post_proxy のアップデート
             post_proxy = result.get("post_proxy")
 
@@ -196,7 +238,7 @@ class WebSearch(Role):
         except Exception as e:
             self.logger.error(f"Failed to reply due to: {e}")
 
-        
+
         return post_proxy.end()
 
 
