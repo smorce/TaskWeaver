@@ -5,6 +5,7 @@
   "llm.model": "microsoft/phi-3-mini-128k-instruct:free",
   "llm.response_format": "",
   "session.roles": ["planner", "code_interpreter", "web_search"],
+  "execution_service.kernel_mode": "local",
   "ext_llms.llm_configs": {
       "llm_A":
           {

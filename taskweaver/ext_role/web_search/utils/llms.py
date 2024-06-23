@@ -5,7 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 # pip install pyyaml
 import yaml
-with open("web_search_config.yaml", 'r') as file:
+with open("../web_search_config.yaml", 'r') as file:
     config = yaml.safe_load(file)
 
 
@@ -36,7 +36,7 @@ def call_model(prompt: list, model: str, max_retries: int = 2, response_format: 
 
     lc_messages = convert_openai_messages(prompt)
     # response = ChatOpenAI(model=model, max_retries=max_retries, model_kwargs=optional_params).invoke(lc_messages).content
-    
+
     # LCEL の書き方にする
     # llm = ChatOpenAI(model=model, max_retries=max_retries, model_kwargs=optional_params)
 
@@ -52,7 +52,7 @@ def call_model(prompt: list, model: str, max_retries: int = 2, response_format: 
 
     chain = llm | parser
     response = chain.invoke(lc_messages)
-    
+
     return response
 
 

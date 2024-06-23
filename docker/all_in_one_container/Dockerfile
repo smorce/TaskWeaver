@@ -54,8 +54,10 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "lxml[html_clean]" \
     "websockets" \
     "unstructured" \
-    "json5" \
     "json_repair"; \
+    fi
+RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
+    pip install --no-cache-dir --no-warn-script-location "json5"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "sentence_transformers"; \
