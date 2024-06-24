@@ -1,8 +1,0 @@
-# GPT-researcher に変えたので使っていないが、残しておく
-api_provider: duckduckgo
-result_count: 3
-google_api_key: your_google_api_key
-google_search_engine_id: your_google_search_engine_id
-bing_api_key: your_bing_api_key
-tavily_api_key: TAVILY_API_KEY
-openrouter_api_key: OPENROUTER_API_KEY

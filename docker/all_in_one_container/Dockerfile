@@ -29,7 +29,6 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "python-multipart" \
     "markdown" \
     "langchain>=0.2,<0.3" \
-    "langgraph" \
     "langchain_community>=0.2,<0.3" \
     "langchain-openai>=0.1,<0.2" \
     "langchain-google-genai>=1,<2" \
@@ -58,7 +57,8 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "json_repair"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
-    pip install --no-cache-dir --no-warn-script-location "json5"; \
+    pip install --no-cache-dir --no-warn-script-location "json5" \
+    "langgraph"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "sentence_transformers"; \
