@@ -29,6 +29,7 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "python-multipart" \
     "markdown" \
     "langchain>=0.2,<0.3" \
+    "langgraph" \
     "langchain_community>=0.2,<0.3" \
     "langchain-openai>=0.1,<0.2" \
     "langchain-google-genai>=1,<2" \

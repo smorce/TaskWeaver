@@ -2,12 +2,20 @@ from langchain.adapters.openai import convert_openai_messages
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 
-
+import os
+from typing import Optional
 # pip install pyyaml
 import yaml
-with open("../web_search_config.yaml", 'r') as file:
-    config = yaml.safe_load(file)
 
+# 現在のスクリプトのディレクトリを取得
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 一つ上のディレクトリにあるweb_search_config.yamlのパスを作成
+config_path = os.path.join(current_dir, '..', 'web_search_config.yaml')
+
+# YAMLファイルを読み込む
+with open(config_path, 'r') as file:
+    config = yaml.safe_load(file)
 
 # OpenRouter にする
 class ChatOpenRouter(ChatOpenAI):
