@@ -40,11 +40,12 @@ if is_LangSmith:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_PROJECT"] = f"Tracing Walkthrough - {unique_id}"
     os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-    os.environ["LANGCHAIN_API_KEY"] = ""   # ★APIキーを入れる
+    # os.environ["LANGCHAIN_API_KEY"] = ""   # ★APIキーを入れる
 load_dotenv()
 
 from injector import inject
 
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.module.event_emitter import SessionEventEmitter
@@ -52,6 +53,13 @@ from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
 from taskweaver.role.role import RoleConfig, RoleEntry
 from taskweaver.utils import read_yaml
+
+import os
+# 現在のスクリプトのディレクトリを取得
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# task.json のパスを生成
+task_json_path = os.path.join(script_dir, 'task.json')
+
 
 
 # 元のコード。一旦消してみる。
@@ -119,11 +127,13 @@ class WebSearch(Role):
             from taskweaver.ext_role.web_search.publisher import PublisherAgent
 
             from langgraph.graph import StateGraph, END
-            from .utils.views import print_agent_output
             from memory.research import ResearchState
 
-
-            with open('task.json', 'r') as f:
+            # -----------------------------------------------------
+            # task.json の model は web_search/utils/llms.py に関係あり。LLM は OpenRouter を使うようにしたので、そのやり方で指定する。リサーチャー以外の マルチエージェント は全て共通で以下の LLM が呼ばれる
+            # リサーチャーだけ異なる実装なので、使うLLMは config.py で設定する。
+            # -----------------------------------------------------
+            with open(task_json_path, 'r') as f:
                 task = json.load(f)
 
             self.task_id = int(time.time()) # Currently time based, but can be any unique identifier
@@ -139,6 +149,7 @@ class WebSearch(Role):
 
 
             # ResearchState を持つ Langchain StateGraph を定義
+            # memory/research.py で扱えるデータを定義している
             workflow = StateGraph(ResearchState)
 
             # Add nodes for each agent
@@ -157,14 +168,21 @@ class WebSearch(Role):
             workflow.set_entry_point("browser")
             workflow.add_edge('publisher', END)
 
+            print("デバッグ：ワークフローdone！")
+
             return workflow
 
         except Exception as e:
             raise Exception(f"Failed to initialize the plugin due to: {e}")
 
     def reply(self, memory: Memory, **kwargs) -> Post:           # [2024/06/23] マルチエージェントは順番に実行して結果を繋げていく設計なので、 reply メソッドは同期関数でないといけない
+        from .utils.views import print_agent_output
+
+        print("デバッグ writer1：", self.writer)
         if self.writer is None:
             research_team = self.init_research_team()
+            print("デバッグ　リサーチチーム：", research_team)      # 初回だけ呼び出された。そのまま writer が残っていた
+        print("デバッグ writer2：", self.writer)
 
         rounds = memory.get_role_rounds(
             role=self.alias,
@@ -188,8 +206,7 @@ class WebSearch(Role):
             """
             # リサーチグラフの実行
             # Publisher の generate_layout で作成した layout が result["report"] に格納されている
-            result = await chain.ainvoke({"task": task, "post_proxy": post_proxy})          # ★ research_agent.run_initial_research に {"task": self.task} という辞書を渡している。ココで初期計画が立案される。
-                                                                                            # ★ post_proxy も渡せるように改造する。
+            result = await chain.ainvoke({"task": task, "post_proxy": post_proxy})          # ★ research_agent.run_initial_research に task と post_proxy のデータを渡す。渡されていない title や conclusion などは None になる。どんなデータを渡せるかは memory/research.py で定義している。
             return result
 
 
@@ -219,13 +236,57 @@ class WebSearch(Role):
 
 
         try:
+            print("デバッグ：コンパイルします！")
+            print("デバッグ2　リサーチチーム：", research_team)
+
             # グラフをコンパイルする
             chain = research_team.compile()
+            print("デバッグ：コンパイル完了！")
+            post_proxy.update_status("コンパイル完了だぜ！！！！")
+
 
             print_agent_output(f"Starting the research process for query '{self.task.get('query')}'...", "MASTER")
 
+
+
+            # ------------------------------------
+            # update_attachment のデバッグ
+            # やっぱりこれだった
+            # ------------------------------------
+            post_proxy.update_attachment(
+                message="- WebSearch is loading the pages...",
+                type=AttachmentType.text,
+            )
+
+            post_proxy.update_attachment(
+                message="1. WebSearch is transforming the pages...",
+                type=AttachmentType.thought,
+            )
+
+            post_proxy.update_attachment(
+                message=f"2.WebSearch is querying the pages on ...",
+                type=AttachmentType.web_exploring_plan,
+            )
+
+            bulletin_message = (
+                f"I have drawn up a plan: \n"
+                f"Please proceed with this step of this plan:"
+                )
+            post_proxy.update_attachment(
+                message=bulletin_message,
+                type=AttachmentType.board,
+            )
+            # ------------------------------------
+
             # 非同期処理を実行
+            print("デバッグ：リサーチします！")
             result = run_async_in_loop(async_research(chain, self.task, post_proxy))
+            print("デバッグ：リサーチ完了！")
+
+
+            # 意図的にエラーを発生させる
+            raise Exception("意図的なエラー発生のため停止します")
+
 
             # post_proxy のアップデート
             post_proxy = result.get("post_proxy")
@@ -238,6 +299,16 @@ class WebSearch(Role):
         except Exception as e:
             self.logger.error(f"Failed to reply due to: {e}")
 
+
+
+        # 意図的にエラーを発生させる
+        raise Exception("意図的なエラー発生のため停止します")
+
+
+
+        # ★post_proxy を他のロールに渡して渡した先で update_message すると、フロントエンドに表示されるのか？ event_emitter を渡す必要がある？？ → web_explorer は渡していたから多分 post_proxy を渡すだけでいい気がする
+        # update_message メソッドは最後に使うやつ。デフォルトで is_end が True になっている
+        post_proxy.update_message("完了！！！！！")
 
         return post_proxy.end()
 

@@ -22,9 +22,9 @@ class Config:
         """Initialize the config class."""
         self.config_file = os.path.expanduser(config_file) if config_file else os.getenv('CONFIG_FILE')
         self.retriever = os.getenv('RETRIEVER', "tavily")
-        self.embedding_provider = os.getenv('EMBEDDING_PROVIDER', 'openai')
+        self.embedding_provider = os.getenv('EMBEDDING_PROVIDER', 'huggingface')
         self.llm_provider = os.getenv('LLM_PROVIDER', "google")                             # openai から変更
-        self.fast_llm_model = os.getenv('FAST_LLM_MODEL', "gemini-1.5-flash-latest")        # gpt-3.5-turbo-16k から変更。LangChain の ChatGoogleGenerativeAI を使っている 
+        self.fast_llm_model = os.getenv('FAST_LLM_MODEL', "gemini-1.5-flash-latest")        # gpt-3.5-turbo-16k から変更。LangChain の ChatGoogleGenerativeAI を使っている
         self.smart_llm_model = os.getenv('SMART_LLM_MODEL', "gemini-1.5-pro-latest")        # gpt-4o から変更。LangChain の ChatGoogleGenerativeAI を使っている
         self.fast_token_limit = int(os.getenv('FAST_TOKEN_LIMIT', 10000))                   # 適当に増やした
         self.smart_token_limit = int(os.getenv('SMART_TOKEN_LIMIT', 20000))                 # 適当に増やした

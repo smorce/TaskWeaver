@@ -18,7 +18,8 @@ class Memory:
                 _embeddings = AzureOpenAIEmbeddings(deployment=os.environ["AZURE_EMBEDDING_MODEL"], chunk_size=16)
             case "huggingface":
                 from langchain.embeddings import HuggingFaceEmbeddings
-                _embeddings = HuggingFaceEmbeddings()
+                model_name = "intfloat/multilingual-e5-large"
+                _embeddings = HuggingFaceEmbeddings(model_name=model_name)
 
             case _:
                 raise Exception("Embedding provider not found.")

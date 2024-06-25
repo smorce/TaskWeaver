@@ -2,15 +2,16 @@ FROM python:3.10-slim
 
 RUN python3 -m pip install --upgrade pip
 
+# weasyprint のために色々インストールした
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git build-essential libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --no-warn-script-location -r requirements.txt
+RUN pip install --no-cache-dir --no-warn-script-location --default-timeout=100 -r requirements.txt
 
 RUN pip install --no-cache-dir --no-warn-script-location -U "chainlit<1.1.300"
 
@@ -21,26 +22,13 @@ ARG WITH_WEB_SEARCH=true
 COPY docker/all_in_one_container/model_downloader.py .
 # Install the web search dependencies
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
-    pip install --no-cache-dir --no-warn-script-location "duckduckgo_search>=6.1.5" \
+    pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "duckduckgo_search>=6.1.5" \
     "beautifulsoup4" \
     "md2pdf" \
     "playwright" \
     "pydantic" \
     "python-multipart" \
     "markdown" \
-    "langchain>=0.2,<0.3" \
-    "langchain_community>=0.2,<0.3" \
-    "langchain-openai>=0.1,<0.2" \
-    "langchain-google-genai>=1,<2" \
-    "langchain-groq>=0.1,<0.2" \
-    "langchain_anthropic>=0.1,<0.2" \
-    "langchain_mistralai>=0.1,<0.2" \
-    "langchain_huggingface>=0.0.1,<0.1" \
-    "langchain_together>=0.1,<0.2" \
-    "langchain_cohere" \
-    "langchain_google_vertexai" \
-    "langchain_fireworks" \
-    "langchain_aws" \
     "tavily-python" \
     "arxiv" \
     "PyMuPDF" \
@@ -54,11 +42,27 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "lxml[html_clean]" \
     "websockets" \
     "unstructured" \
+    "weasyprint" \
     "json_repair"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
-    pip install --no-cache-dir --no-warn-script-location "json5" \
+    pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "json5" \
+    "langchain>=0.2,<0.3" \
+    "langchain_community>=0.2,<0.3" \
+    "langchain-openai>=0.1,<0.2" \
+    "langchain-groq>=0.1,<0.2" \
+    "langchain_anthropic>=0.1,<0.2" \
+    "langchain_huggingface>=0.0.1,<0.1" \
+    "langchain_together>=0.1,<0.2" \
+    "langchain_cohere" \
     "langgraph"; \
+    fi
+RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
+    pip install --no-cache-dir --no-warn-script-location "langchain_mistralai>=0.1,<0.2" \
+    "langchain-google-genai>=1,<2" \
+    "langchain_google_vertexai" \
+    "langchain_fireworks" \
+    "langchain_aws"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "sentence_transformers"; \

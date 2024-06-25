@@ -1,6 +1,6 @@
 from typing import TypedDict, List, Annotated
 import operator
-
+from taskweaver.module.event_emitter import PostEventProxy
 
 class ResearchState(TypedDict):
     task: dict
@@ -16,5 +16,8 @@ class ResearchState(TypedDict):
     conclusion: str
     sources: List[str]
     report: str
+    # [追加] PostProxyオブジェクト
+    # LangGraph 内で扱いたいので追加した
+    post_proxy: PostEventProxy
 
 

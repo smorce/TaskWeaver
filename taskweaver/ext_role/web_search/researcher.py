@@ -1,8 +1,8 @@
-# from gpt_researcher import GPTResearcher              # configディレクトリ にコンフィグファイルとして JSON で用意することもできそうだけど、ベタ書きでも OK なので一旦コンフィグファイルは不要。
-from gpt_researcher.master.agent import GPTResearcher   # → 置く場所の書き方はこっちな気がする。 agent.py の中で色々 import しないといけない気がするが、一旦動かしてエラーが出たら対応する
+from gpt_researcher.master.agent import GPTResearcher
 from colorama import Fore, Style
 from .utils.views import print_agent_output
 # from taskweaver.module.event_emitter import PostEventProxy    # 必要ない気がする
+from taskweaver.memory.attachment import AttachmentType
 
 
 class ResearchAgent:
@@ -12,7 +12,10 @@ class ResearchAgent:
     async def research(self, query: str, research_report: str = "research_report", parent_query: str = "", verbose=True):
         # Initialize the researcher
         # gpt_researcher/master/agent.py
+        print("デバッグ　def research")
+        # ここでエラーが出ている
         researcher = GPTResearcher(query=query, report_type=research_report, parent_query=parent_query, verbose=verbose)
+        print("完了　def research")
         # Conduct research on the given query
         await researcher.conduct_research()
         # Write the report
@@ -30,13 +33,14 @@ class ResearchAgent:
         return {subtopic: report}
 
     async def run_initial_research(self, research_state: dict):
-        task = research_state.get("task")
+        task       = research_state.get("task")
+        query      = task.get("query")
         post_proxy = research_state.get("post_proxy")    # ★ post_proxy も受け取るようにした
-        query = task.get("query")
         print_agent_output(f"Running initial research on the following query: {query}", agent="RESEARCHER")
-        # 追加
-        post_proxy.update_message(
-            f"ResearchAgent: 初期計画を立案し実行中…\n"
+        # 追加[ update_attachment に修正]
+        post_proxy.update_attachment(
+            message=f"ResearchAgent: 初期計画を立案し実行中…\n",
+            type=AttachmentType.text,
         )
         return {"task": task, "initial_research": await self.research(query=query, verbose=task.get("verbose")), "post_proxy": post_proxy}
 

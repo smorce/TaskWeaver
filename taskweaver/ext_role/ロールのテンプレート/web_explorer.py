@@ -5,8 +5,8 @@
 # WebExplorerはWebページに移動し、Webページのコンテンツを見ることができます。
 # WebExplorerはその視覚能力を使用してWebページを表示し、そこから情報を抽出することができます。
 # WebExplorerは、クリック、タイプなど、Webページ上でさまざまなアクションを実行することもできます。
-# この役割は、単純なウェブ・ブラウジング・タスクを処理することができます。そのため、タスクが複雑すぎる場合は 
-# タスクをいくつかの単純なタスクに分解し、WebExplorer 
+# この役割は、単純なウェブ・ブラウジング・タスクを処理することができます。そのため、タスクが複雑すぎる場合は
+# タスクをいくつかの単純なタスクに分解し、WebExplorer
 # その後、WebExplorer でステップバイステップでタスクを完了します。
 
 import os
@@ -48,13 +48,13 @@ class WebExplorer(Role):
         config: WebExplorerConfig,
         logger: TelemetryLogger,
         tracing: Tracing,
-        event_emitter: SessionEventEmitter,
+        event_emitter: SessionEventEmitter,   # 多分、event_emitter がイベントをハンドラに送り(イベントの発火)、イベントハンドラーがイベントを検知して、フロントエンドに表示するという流れだと思う
         llm_api: LLMApi,          # 追加
         role_entry: RoleEntry,
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
         # 追加
-        self.alias = "WebSearch"    # これは web_search.role.yaml の alias
+        self.alias = "WebSearch"    # これは web_search.role.yaml の alias。命名はスネークケースというルールがある。
         self.llm_api = llm_api
 
         self.logger = logger

@@ -241,7 +241,7 @@ async def generate_report(
 
     try:
         report = await create_chat_completion(
-            model=cfg.smart_llm_model,　　　　　★ファイナルレポートは Pro にしたい。
+            model=cfg.smart_llm_model,    # ★ファイナルレポートは Pro にしたい。
             messages=[
                 {"role": "system", "content": f"{agent_role_prompt}"},
                 {"role": "user", "content": content}],
@@ -278,7 +278,7 @@ async def get_report_introduction(query, context, role, config, websocket=None):
     レポートの章を作成する関数(章とは H1 の見出しがついた文章のこと)
     """
     # generate_report_introduction とは以下のプロンプトのこと
-    # return f"""{context}\n 
+    # return f"""{context}\n
     #     Using the above latest information, Prepare a detailed report introduction on the topic -- {query}.
     #     - The introduction should be succinct, well-structured, informative with markdown syntax.
     #     - As this introduction will be part of a larger report, do NOT include any other sections, which are generally present in a report.

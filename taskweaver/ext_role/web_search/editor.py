@@ -5,11 +5,22 @@ from langgraph.graph import StateGraph, END
 import asyncio
 import json
 
+import sys
+import os
+# memory を読み込めるようにするため、現在のスクリプトのディレクトリを取得
+project_root = os.path.dirname(os.path.abspath(__file__))
+
+# プロジェクトのルートディレクトリを取得
+sys.path.append(project_root)
+
 from memory.draft import DraftState
-from . import \
-    ResearchAgent, \
-    ReviewerAgent, \
-    ReviserAgent
+try:
+    from .researcher import ResearchAgent
+    from .reviewer import ReviewerAgent
+    from .reviser import ReviserAgent
+except ImportError as e:
+    print(f"editor.pyのエラー: Failed to import: {e}")
+    # 代替処理やエラーハンドリングをここに追加
 
 
 class EditorAgent:

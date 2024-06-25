@@ -102,6 +102,17 @@ class Session:
             role_entry = self.role_registry.get(role_name)
             role_instance = self.session_injector.create_object(role_entry.module, {"role_entry": role_entry})
             self.worker_instances[role_instance.get_alias()] = role_instance
+            # print("セッションデバッグ1-1 role_instance", role_instance)
+            # print("セッションデバッグ1-2 role_instance。中身は？", dir(role_instance))
+            # try:
+            #     print("セッションデバッグ1-3 role_instance。writer ある？？", role_instance.writer)   # この段階ではなく、None だった
+            # except Exception as e:
+            #     pass
+
+
+        # print("セッションデバッグ2-1 config。これがtask_config？？：", config)   AppSessionConfig だったので違うっぽい
+        # print("セッションデバッグ2-2 role_registry：", role_registry)
+
 
         if "planner" in self.config.roles:
             self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
@@ -295,6 +306,13 @@ class Session:
             if len(file_names) > 0:
                 message_prefix += f"files added: {', '.join(file_names)}.\n"
 
+
+        # メモ
+        # event_emitter は セッションクラス
+        # event_handler は セッションクラス の send_message メッセージ
+        # ---
+        # 多分、event_emitter がイベントをハンドラに送り(イベントの発火)、イベントハンドラーがイベントを検知して、フロントエンドに表示している、ということをココでやっていると思う
+        # これは reply メソッド の中で PostProxyオブジェクト が更新されると、上記の処理が走るっぽい( https://microsoft.github.io/TaskWeaver/docs/concepts/role )
         with self.event_emitter.handle_events_ctx(event_handler):
             chat_round = self._send_text_message(message_prefix + message)
 
