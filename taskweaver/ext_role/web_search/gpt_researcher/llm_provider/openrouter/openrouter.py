@@ -149,8 +149,8 @@ class OpenRouterProvider(ChatOpenAI):
 
         # else:
         #     return await self.stream_response(messages, websocket)
-        
-        
+
+
         if not stream:
             # Phi 用にプロンプトテンプレートを指定しているので input に入れるように変更
             output = await self.llm.ainvoke({"input": messages})

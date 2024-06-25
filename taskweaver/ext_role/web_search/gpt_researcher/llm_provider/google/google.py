@@ -27,10 +27,10 @@ class GoogleProvider:
 
         """
         try:
-            api_key = os.environ["GEMINI_API_KEY"]
+            api_key = os.environ["LLM_GOOGLE_GENAI_API_KEY"]
         except:
             raise Exception(
-                "GEMINI API key not found. Please set the GEMINI_API_KEY environment variable.")
+                "GEMINI API key not found. Please set the LLM_GOOGLE_GENAI_API_KEY environment variable.")
         return api_key
 
     def get_llm_model(self):
@@ -48,12 +48,12 @@ class GoogleProvider:
         """
         The function `convert_messages` converts messages based on their role into either SystemMessage
         or HumanMessage objects.
-        
+
         Args:
           messages: It looks like the code snippet you provided is a function called `convert_messages`
         that takes a list of messages as input and converts each message based on its role into either a
         `SystemMessage` or a `HumanMessage`.
-        
+
         Returns:
           The `convert_messages` function is returning a list of converted messages based on the input
         `messages`. The function checks the role of each message in the input list and creates a new

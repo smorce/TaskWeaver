@@ -62,9 +62,9 @@ async def create_chat_completion(
     # validate input
     if model is None:
         raise ValueError("Model cannot be None")
-    if max_tokens is not None and max_tokens > 8001:        # ★ここは一旦イジらないがモデルによっては変えても良いかも
+    if max_tokens is not None and max_tokens > 10001:        # fast_token_limit に合わせて 8001 から増やした
         raise ValueError(
-            f"Max tokens cannot be more than 8001, but got {max_tokens}")
+            f"Max tokens cannot be more than 10001, but got {max_tokens}")
 
     # Get the provider from supported providers
     ProviderClass = get_provider(llm_provider)

@@ -17,8 +17,10 @@ class Memory:
                 from langchain_openai import AzureOpenAIEmbeddings
                 _embeddings = AzureOpenAIEmbeddings(deployment=os.environ["AZURE_EMBEDDING_MODEL"], chunk_size=16)
             case "huggingface":
-                from langchain.embeddings import HuggingFaceEmbeddings
-                model_name = "intfloat/multilingual-e5-large"
+                from langchain_community.embeddings import HuggingFaceEmbeddings
+                # model_name = "intfloat/multilingual-e5-large"  # 2.24 GBは重いので一旦なし
+                # model_name = "intfloat/multilingual-e5-base"     # 1.1 GB で次に重いサイズ。一番軽いのは「intfloat/multilingual-e5-small」
+                model_name = "intfloat/multilingual-e5-small"
                 _embeddings = HuggingFaceEmbeddings(model_name=model_name)
 
             case _:
