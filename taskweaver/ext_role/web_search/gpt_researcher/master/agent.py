@@ -70,19 +70,30 @@ class GPTResearcher:
         """
         if self.verbose:
             await stream_output("logs", f"🔎 Starting the research task for '{self.query}'...", self.websocket)
-        
+
         # Generate Agent
         if not (self.agent and self.role):
+            print("デバッグ choose_agent 前")
             self.agent, self.role = await choose_agent(self.query, self.cfg, self.parent_query)
+            print("デバッグ self.agent", self.agent)
+            print("デバッグ self.role", self.role)
 
         if self.verbose:
+            print("デバッグ stream_output 前")
+            # この関数の目的は、出力をWebSocketを通じてストリームすることです。また、条件に応じてログに出力することもできます。
+            # websocket オブジェクトの send_json メソッドを使用して、type と output を含むJSONデータを非同期で送信します。WebSocket通信が完了するまで待機します。
             await stream_output("logs", self.agent, self.websocket)
+            print("デバッグ stream_output done!")
 
         # If specified, the researcher will use the given urls as the context for the research.
         if self.source_urls:
+            print("デバッグ1 source_urls YES")
             self.context = await self.get_context_by_urls(self.source_urls)
+            print("デバッグ1 source_urls done!")
         else:
+            print("デバッグ2 source_urls NO")
             self.context = await self.get_context_by_search(self.query)
+            print("デバッグ2 source_urls done!")
 
         time.sleep(2)
 

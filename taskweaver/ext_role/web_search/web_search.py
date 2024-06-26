@@ -251,11 +251,17 @@ class WebSearch(Role):
 
             # ------------------------------------
             # update_attachment のデバッグ
-            # やっぱりこれだった
+            # → やっぱりこれだった
             # ------------------------------------
+            text_message = (
+                "1. ああああ\n"
+                "2.いいいい\n"
+                "3. うううう\n"
+                "4.ええええ"
+                )
             post_proxy.update_attachment(
-                message="- WebSearch is loading the pages...",
-                type=AttachmentType.text,
+                message=text_message,
+                type=AttachmentType.plan,
             )
 
             post_proxy.update_attachment(
@@ -265,7 +271,7 @@ class WebSearch(Role):
 
             post_proxy.update_attachment(
                 message=f"2.WebSearch is querying the pages on ...",
-                type=AttachmentType.web_exploring_plan,
+                type=AttachmentType.text,
             )
 
             bulletin_message = (

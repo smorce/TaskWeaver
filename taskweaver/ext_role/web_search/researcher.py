@@ -12,10 +12,7 @@ class ResearchAgent:
     async def research(self, query: str, research_report: str = "research_report", parent_query: str = "", verbose=True):
         # Initialize the researcher
         # gpt_researcher/master/agent.py
-        print("デバッグ　def research")
-        # ここでエラーが出ている
         researcher = GPTResearcher(query=query, report_type=research_report, parent_query=parent_query, verbose=verbose)
-        print("完了　def research")
         # Conduct research on the given query
         await researcher.conduct_research()
         # Write the report
