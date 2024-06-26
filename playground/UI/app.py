@@ -510,7 +510,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         atta_cnt: List[str] = []
 
         # アタッチメントのタイプに応じたコンテンツの生成
-        if a_type in [AttachmentType.plan, AttachmentType.init_plan]:
+        if a_type in [AttachmentType.plan, AttachmentType.init_plan]:   # プランとイニットプランはあるけど、カレントステップはココにはない
             items: List[str] = []
             lines = msg.split("\n")
             for idx, row in enumerate(lines):
@@ -539,6 +539,25 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                     elem("code", "language-python")(txt(msg, br=False)),
                 ),
             )
+        elif a_type == AttachmentType.web_search_text:
+            # 以下の中身は [AttachmentType.plan, AttachmentType.init_plan] と全く同じ
+            # タイトルを弄りたかったので web_search_text を追加した
+            items: List[str] = []
+            lines = msg.split("\n")
+            for idx, row in enumerate(lines):
+                item = row
+                if "." in row and row.split(".")[0].isdigit():
+                    item = row.split(".", 1)[1].strip()
+                items.append(
+                    div("tw-plan-item")(
+                        div("tw-plan-idx")(str(idx + 1)),
+                        div("tw-plan-cnt")(
+                            txt(item),
+                            blinking_cursor if not is_end and idx == len(lines) - 1 else "",
+                        ),
+                    ),
+                )
+            atta_cnt.append(div("tw-plan")(*items))
         else:
             atta_cnt.append(txt(msg))
             if not is_end:

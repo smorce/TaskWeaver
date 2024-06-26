@@ -38,6 +38,9 @@ class AttachmentType(Enum):
     # function calling
     function = "function"
 
+    # [追加]WebSearch
+    web_search_text = "カスタムテキストだよ"
+
     # WebExplorer
     web_exploring_plan = "web_exploring_plan"
     web_exploring_screenshot = "web_exploring_screenshot"

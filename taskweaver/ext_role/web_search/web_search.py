@@ -261,7 +261,7 @@ class WebSearch(Role):
                 )
             post_proxy.update_attachment(
                 message=text_message,
-                type=AttachmentType.plan,
+                type=AttachmentType.web_search_text,
             )
 
             post_proxy.update_attachment(
