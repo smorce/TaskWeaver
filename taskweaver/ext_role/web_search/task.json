@@ -1,5 +1,5 @@
 {
-  "query": "Y Combinatorに関連する最新のニュースを集めて詳細をレポートしてください。",
+  "query": "",
   "max_sections": 3,
   "publish_formats": {
     "markdown": true,

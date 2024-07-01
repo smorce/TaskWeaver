@@ -1,7 +1,9 @@
 from datetime import datetime
 import json5 as json
+import re
 from .utils.views import print_agent_output
 from .utils.llms import call_model
+from taskweaver.memory.attachment import AttachmentType
 
 sample_json = """
 {
@@ -56,12 +58,30 @@ class WriterAgent:
         }]
 
         response = call_model(prompt, task.get("model"), max_retries=2, response_format='json')
-        return json.loads(response)
+        # return json.loads(response)
+
+        print("write_sections のデバッグ。JSON形式か？？  response")
+        print(response)
+
+        # 正規表現を使って{}の中身を抽出する
+        match = re.search(r'\{.*\}', response, re.DOTALL)
+
+        if match:
+            json_str = match.group(0)
+            # JSONをパースしてPythonの辞書型に変換する
+            write_sections = json.loads(json_str)
+            print("write_sections")
+            print(write_sections)
+        else:
+            print("write_sections: JSON形式のデータが見つかりませんでした。")
+
+        return write_sections
+
 
     def revise_headers(self, task: dict, headers: dict):
         prompt = [{
             "role": "system",
-            "content": """You are a research writer. 
+            "content": """You are a research writer.
 Your sole purpose is to revise the headers data based on the given guidelines."""
         }, {
             "role": "user",
@@ -80,9 +100,11 @@ Headers Data: {headers}\n
     def run(self, research_state: dict):
         post_proxy = research_state.get("post_proxy")          # 追加
         # 追加
-        post_proxy.update_message(
-            f"EditorAgent: 与えられた調査結果からの序論、結論、参考文献のセクションを含む最終レポートを編集中…\n"
+        post_proxy.update_attachment(
+            message=f"EditorAgent: 与えられた調査結果からの序論、結論、参考文献のセクションを含む最終レポートを編集中…\n",
+            type=AttachmentType.web_search_text,
         )
+
         print_agent_output(f"Writing final research report based on research data...", agent="WRITER")
         research_layout_content = self.write_sections(research_state)
 

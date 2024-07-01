@@ -8,6 +8,30 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Node.jsのインストール
+RUN apt-get update && \
+    apt-get install -y nodejs npm curl gnupg wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# npmが正しくインストールされているか確認
+RUN node -v && npm -v
+
+# marp-cliのグローバルインストール
+RUN npm install -g @marp-team/marp-cli
+
+# marp-cliを使うために Chrome のインストール
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt-get update && \
+    apt-get install -y ./google-chrome-stable_current_amd64.deb && \
+    apt-get -f install -y && \
+    rm google-chrome-stable_current_amd64.deb && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# CHROME_PATH環境変数の設定
+ENV CHROME_PATH=/usr/bin/google-chrome
+
 WORKDIR /app
 
 COPY requirements.txt .

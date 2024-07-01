@@ -1,13 +1,14 @@
 import os
 from .utils.views import print_agent_output
 from taskweaver.module.event_emitter import PostEventProxy
+from taskweaver.memory.attachment import AttachmentType
 from .utils.file_formats import write_md_to_ppt
 
 class PowerPointDesignerAgent:
     def __init__(self, output_dir: str):
         self.output_dir = output_dir
 
-    def load_latest_markdown(directory):
+    def load_latest_markdown(self, directory):
         """
         指定されたディレクトリから最新のマークダウンファイルを読み込み、その内容を返す関数。
 
@@ -37,18 +38,20 @@ class PowerPointDesignerAgent:
 
         return content
 
-    async def write_report_by_formats(self, md_content, output_dir):        
+    async def write_report_by_formats(self, md_content, output_dir):
         await write_md_to_ppt(md_content, output_dir)           # ★Marpで実装した。他の関数と合わせて非同期にした。
 
 
-    def run(self, post_proxy: PostEventProxy):
+    async def run(self, post_proxy: PostEventProxy):
         print_agent_output(f"パワーポイントを作成中...", agent="POWERPOINTDESIGNER")
-        post_proxy.update_message(
-            f"ResearchAgent: パワーポイントを作成中…\n"
+        post_proxy.update_attachment(
+            message=f"PowerPointDesignerAgent: パワーポイントを作成中…\n",
+            type=AttachmentType.web_search_text,
         )
+
         # mdファイルを開いて内容を読み込む
-        md_content = load_latest_markdown(self.output_dir)
+        md_content = self.load_latest_markdown(self.output_dir)
         # パワーポイントを作成して保存する
-        await write_report_by_formats(md_content, self.output_dir)
-        
+        await self.write_report_by_formats(md_content, self.output_dir)
+
         return post_proxy

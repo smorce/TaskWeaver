@@ -27,7 +27,7 @@ class Config:
         self.fast_llm_model = os.getenv('FAST_LLM_MODEL', "gemini-1.5-flash-latest")        # gpt-3.5-turbo-16k から変更。LangChain の ChatGoogleGenerativeAI を使っている
         self.smart_llm_model = os.getenv('SMART_LLM_MODEL', "gemini-1.5-pro-latest")        # gpt-4o から変更。LangChain の ChatGoogleGenerativeAI を使っている
         self.fast_token_limit = int(os.getenv('FAST_TOKEN_LIMIT', 10000))                   # 適当に増やした
-        self.smart_token_limit = int(os.getenv('SMART_TOKEN_LIMIT', 20000))                 # 適当に増やした
+        self.smart_token_limit = int(os.getenv('SMART_TOKEN_LIMIT', 40000))                 # 適当に増やした
         self.browse_chunk_max_length = int(os.getenv('BROWSE_CHUNK_MAX_LENGTH', 8192))
         self.summary_token_limit = int(os.getenv('SUMMARY_TOKEN_LIMIT', 3000))              # 適当に増やした
         self.temperature = float(os.getenv('TEMPERATURE', 0.9))                             # 元は 0.55

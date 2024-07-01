@@ -62,9 +62,14 @@ async def create_chat_completion(
     # validate input
     if model is None:
         raise ValueError("Model cannot be None")
-    if max_tokens is not None and max_tokens > 10001:        # fast_token_limit に合わせて 8001 から増やした
-        raise ValueError(
-            f"Max tokens cannot be more than 10001, but got {max_tokens}")
+    if model == "gemini-1.5-flash-latest":
+        if max_tokens is not None and max_tokens > 10001:        # fast_token_limit に合わせて 8001 から増やした
+            raise ValueError(
+                f"Max tokens cannot be more than 10001, but got {max_tokens}")
+    elif model == "gemini-1.5-pro-latest":
+        if max_tokens is not None and max_tokens > 40001:        # smart_llm 用も追加
+            raise ValueError(
+                f"Max tokens cannot be more than 40001, but got {max_tokens}")
 
     # Get the provider from supported providers
     ProviderClass = get_provider(llm_provider)

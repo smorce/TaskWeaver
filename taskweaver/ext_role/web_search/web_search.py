@@ -116,6 +116,7 @@ class WebSearch(Role):
         self.powerpointdesigner = None
         self.output_dir = None
         self.task = None
+        self.query = None
 
 
 
@@ -136,6 +137,7 @@ class WebSearch(Role):
             with open(task_json_path, 'r') as f:
                 task = json.load(f)
 
+            task["query"] = self.query
             self.task_id = int(time.time()) # Currently time based, but can be any unique identifier
             self.output_dir = f"./outputs/run_{self.task_id}_{task.get('query')[0:40]}"
             self.task = task
@@ -177,13 +179,6 @@ class WebSearch(Role):
 
     def reply(self, memory: Memory, **kwargs) -> Post:           # [2024/06/23] マルチエージェントは順番に実行して結果を繋げていく設計なので、 reply メソッドは同期関数でないといけない
         from .utils.views import print_agent_output
-
-        print("デバッグ writer1：", self.writer)
-        if self.writer is None:
-            research_team = self.init_research_team()
-            print("デバッグ　リサーチチーム：", research_team)      # 初回だけ呼び出された。そのまま writer が残っていた
-        print("デバッグ writer2：", self.writer)
-
         rounds = memory.get_role_rounds(
             role=self.alias,
             include_failure_rounds=False,
@@ -191,6 +186,27 @@ class WebSearch(Role):
         last_post = rounds[-1].post_list[-1]
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         post_proxy.update_send_to(last_post.send_from)
+
+        # Planner から渡されたメッセージをクエリにする
+        self.query = last_post.message
+
+        # # ディレクトリ構造を出力する関数
+        # def print_directory_structure(directory, indent=0):
+        #     for root, dirs, files in os.walk(directory):
+        #         level = root.replace(directory, '').count(os.sep)
+        #         indent = ' ' * 4 * level
+        #         print(f"{indent}{os.path.basename(root)}/")
+        #         sub_indent = ' ' * 4 * (level + 1)
+        #         for f in files:
+        #             print(f"{sub_indent}{f}")
+
+        # print_directory_structure("/app")
+
+        print("デバッグ writer1：", self.writer)
+        if self.writer is None:
+            research_team = self.init_research_team()
+            print("デバッグ　リサーチチーム：", research_team)      # 初回だけ呼び出された。そのまま writer が残っていた
+        print("デバッグ writer2：", self.writer)
 
         async def async_research(chain, task, post_proxy):
             """
@@ -202,7 +218,7 @@ class WebSearch(Role):
                 post_proxy: PostProxyオブジェクト。
 
             Returns:
-                リサーチグラフを実行した結果
+                ResearchState クラス: リサーチグラフを実行した結果
             """
             # リサーチグラフの実行
             # Publisher の generate_layout で作成した layout が result["report"] に格納されている
@@ -289,18 +305,31 @@ class WebSearch(Role):
             result = run_async_in_loop(async_research(chain, self.task, post_proxy))
             print("デバッグ：リサーチ完了！")
 
-
-            # 意図的にエラーを発生させる
-            raise Exception("意図的なエラー発生のため停止します")
-
+            # print("result に何が入っている？？")
+            # print(result)
 
             # post_proxy のアップデート
             post_proxy = result.get("post_proxy")
 
+
+
+            async def async_powerpointdesigner(powerpointdesigner, post_proxy):
+                """
+                非同期で PowerPointDesignerAgent を実行する関数。
+                """
+                post_proxy = await powerpointdesigner.run(post_proxy)
+                return post_proxy
+
+
+
             # 調査が完了した後にパワーポイントデザイナーを呼び出す
             from taskweaver.ext_role.web_search.powerpointdesigner import PowerPointDesignerAgent
             powerpointdesigner = PowerPointDesignerAgent(self.output_dir)
-            post_proxy = powerpointdesigner.run(post_proxy)                                  # output_dir からマークダウンファイルを読み込む。
+            post_proxy = run_async_in_loop(async_powerpointdesigner(powerpointdesigner, post_proxy))              # output_dir からマークダウンファイルを読み込む。
+
+            # 意図的にエラーを発生させる
+            # raise Exception("意図的なエラー発生のため停止します")
+
 
         except Exception as e:
             self.logger.error(f"Failed to reply due to: {e}")
@@ -308,13 +337,12 @@ class WebSearch(Role):
 
 
         # 意図的にエラーを発生させる
-        raise Exception("意図的なエラー発生のため停止します")
+        # raise Exception("意図的なエラー発生のため停止します")
 
 
-
-        # ★post_proxy を他のロールに渡して渡した先で update_message すると、フロントエンドに表示されるのか？ event_emitter を渡す必要がある？？ → web_explorer は渡していたから多分 post_proxy を渡すだけでいい気がする
+        # post_proxy を他のロールに渡して渡した先で update_message すると、フロントエンドに表示されるのか？ event_emitter を渡す必要がある？？ → web_explorer は渡していたから多分 post_proxy を渡すだけでいい気がする → 大丈夫だった！！
         # update_message メソッドは最後に使うやつ。デフォルトで is_end が True になっている
-        post_proxy.update_message("完了！！！！！")
+        post_proxy.update_message("リサーチプロセスは完了しました！ついでにレポートも作成しました！")
 
         return post_proxy.end()
 

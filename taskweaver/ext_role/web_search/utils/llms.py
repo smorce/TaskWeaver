@@ -13,9 +13,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # 一つ上のディレクトリにあるweb_search_config.yamlのパスを作成
 config_path = os.path.join(current_dir, '..', 'web_search_config.yaml')
 
-# YAMLファイルを読み込む
-with open(config_path, 'r') as file:
-    config = yaml.safe_load(file)
+# YAMLファイルを読み込む（使っていないが残しておく）
+# with open(config_path, 'r') as file:
+#     config = yaml.safe_load(file)
 
 # OpenRouter にする
 class ChatOpenRouter(ChatOpenAI):
@@ -28,7 +28,11 @@ class ChatOpenRouter(ChatOpenAI):
                 openai_api_key: Optional[str] = None,
                 openai_api_base: str = "https://openrouter.ai/api/v1",
                 **kwargs):
-        openai_api_key = openai_api_key or config.get('openrouter_api_key')
+        # openai_api_key = openai_api_key or config.get('openrouter_api_key')
+        # web_search_config.yaml から読み込むようにしていたが、環境変数から読み込むように変更
+        openai_api_key = openai_api_key or os.getenv("OPENROUTER_API_KEY")
+        print("デバッグ  openai_api_key:", openai_api_key)
+
         super().__init__(openai_api_base=openai_api_base,
                         openai_api_key=openai_api_key,
                         model_name=model_name, **kwargs)

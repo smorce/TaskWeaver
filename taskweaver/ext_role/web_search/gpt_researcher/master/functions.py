@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import datetime, timezone
 
 import markdown
 
@@ -91,17 +92,100 @@ async def get_sub_queries(query: str, agent_role_prompt: str, cfg, parent_query:
         sub_queries: List of sub queries
 
     """
+    print("get_sub_queries関数 前1")
     max_research_iterations = cfg.max_iterations if cfg.max_iterations else 1
+    print("get_sub_queries関数 後1")
+
+    print("デバッグ fast_llm_model: ", cfg.fast_llm_model)
+    print("デバッグ llm_provider: ", cfg.llm_provider)
+
+
+
+    #print("デバッグ generate_search_queries_prompt")
+    # 余計なことは言わず、指定された形式で提示してください。
+    # add_context = (
+    #         '\n\nDo not say anything unnecessary and present it in the format specified.\n\n'
+    #         '# 0utput\n'
+    #         '["query 1", "query 2", "query 3"]'
+    #     )
+    # print(generate_search_queries_prompt(query, parent_query, report_type, max_iterations=max_research_iterations) + add_context)
+
+    # response = await create_chat_completion(
+    #     model=cfg.fast_llm_model,                            # smart_llm_model から fast_llm_model に変更した。検索クエリを考えるのは 分析力の優れた Gemini なら得意だと思うので Flash でもいけるかも。無理なら smart_llm_model に戻す
+    #     messages=[
+    #         {"role": "system", "content": f"{agent_role_prompt}"},
+    #         {"role": "user", "content": generate_search_queries_prompt(query, parent_query, report_type, max_iterations=max_research_iterations) + add_context}],
+    #     temperature=0,
+    #     llm_provider=cfg.llm_provider,
+    #     max_tokens=cfg.fast_token_limit
+    # )
+    # sub_queries = json.loads(response)
+
+    # セルフ✗パワー(パワハラ)プロンプトに変えてみる
+    SelfPorwerPrompt = f"""You are an advanced AI assistant.
+
+# Main goal:.
+"{query}"
+I would like to complete this task. This is an implicit goal, not the main goal.
+
+To do this, the first thing you need to do is suggest three optimal Google search queries to complete this task.
+Use the current date if needed: {datetime.now().strftime("%B %d, %Y")}.
+Also include in the queries specified task details such as locations, names, etc.
+Define your main goal as suggesting three optimal Google search queries.
+
+# Work Steps
+1. break down the main goal into detailed, actionable sub-goals
+2. prepare detailed and actionable sub-goals that help achieve the Main goal
+3. implement the decomposed sub-goals in order, starting with subgoal #1, to achieve the main goal
+4. You are an advanced AI, so each time you implement one of the subgoals, the result looks like a 60 to you, and you consider a modification strategy to make it a 100.
+5. after making corrections based on the correction policy, you start the task for the next sub-goal. 6.
+6. after all subgoals have been implemented without omission, comprehensively check whether the main goal has been achieved or not. 7. after these have been completed, check whether the main goal has been achieved or not.
+After these tasks are completed, the completion is announced to the user. During the completion process, the user is not asked for confirmation, but proceeds on his/her own.
+
+# Final Outtput
+```json
+["query 1", "query 2", "query 3"]
+```"""
+
     response = await create_chat_completion(
         model=cfg.fast_llm_model,                            # smart_llm_model から fast_llm_model に変更した。検索クエリを考えるのは 分析力の優れた Gemini なら得意だと思うので Flash でもいけるかも。無理なら smart_llm_model に戻す
         messages=[
             {"role": "system", "content": f"{agent_role_prompt}"},
-            {"role": "user", "content": generate_search_queries_prompt(query, parent_query, report_type, max_iterations=max_research_iterations)}],
+            {"role": "user", "content": SelfPorwerPrompt}],
         temperature=0,
         llm_provider=cfg.llm_provider,
         max_tokens=cfg.fast_token_limit
     )
-    sub_queries = json.loads(response)
+    print("response:", response)
+
+
+    def get_final_output(text):
+        keyword = "Final Output"
+        index = text.find(keyword)
+        if index != -1:
+            return text[index + len(keyword):].strip()
+        else:
+            return None
+    # Final Output以降の文字列を取得
+    response = get_final_output(response)
+    print("Final Output以降", response)
+
+
+    import re
+    # Extract the JSON part from the text
+    json_pattern = re.compile(r'```json\n(\[.*?\])\n', re.DOTALL)
+    match = json_pattern.search(response)
+
+    if match:
+        extracted_json = match.group(1)
+        print("extracted_json:", extracted_json)
+    else:
+        print("レスポンスにJSONデータがなかった。")
+
+    sub_queries = json.loads(extracted_json)
+    print("JSONでパースした内容")
+    print(sub_queries)
+
     return sub_queries
 
 
@@ -250,7 +334,7 @@ async def generate_report(
             llm_provider=cfg.llm_provider,
             stream=True,
             websocket=websocket,
-            max_tokens=cfg.smart_token_limit
+            max_tokens=cfg.smart_token_limit    # 適当に4万まで増やしたけど足りるか？？ 足りなければ8万まで増やす
         )
     except Exception as e:
         print(f"{Fore.RED}Error in generate_report: {e}{Style.RESET_ALL}")

@@ -37,7 +37,7 @@ class ResearchAgent:
         # 追加[ update_attachment に修正]
         post_proxy.update_attachment(
             message=f"ResearchAgent: 初期計画を立案し実行中…\n",
-            type=AttachmentType.text,
+            type=AttachmentType.web_search_text,
         )
         return {"task": task, "initial_research": await self.research(query=query, verbose=task.get("verbose")), "post_proxy": post_proxy}
 

@@ -4,6 +4,7 @@ from .utils.file_formats import \
     write_text_to_md
 
 from .utils.views import print_agent_output
+from taskweaver.memory.attachment import AttachmentType
 
 
 class PublisherAgent:
@@ -54,9 +55,11 @@ class PublisherAgent:
         task = research_state.get("task")
         post_proxy = research_state.get("post_proxy")          # 追加
         # 追加
-        post_proxy.update_message(
-            f"EditorAgent: 最終レポートを PDF、Docx、Markdown などのマルチフォーマットで公開します…\n"
+        post_proxy.update_attachment(
+            message=f"PublisherAgent: 最終レポートを PDF、Docx、Markdown などのマルチフォーマットで公開します…\n",
+            type=AttachmentType.web_search_text,
         )
+
         publish_formats = task.get("publish_formats")
         print_agent_output(output="Publishing final research report based on retrieved data...", agent="PUBLISHER")
         final_research_report = await self.publish_research_report(research_state, publish_formats)

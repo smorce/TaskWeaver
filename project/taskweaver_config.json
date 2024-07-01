@@ -19,8 +19,8 @@
               "llm.api_type": "google_genai",
               "llm.api_key": "YOUR_API_KEY",
               "llm.model": "gemini-1.5-flash-latest",
-              # "llm.google_genai.api_key": "YOUR_API_KEY",  こっちじゃない？？
-              # "llm.google_genai.model": "gemini-pro"  こっちじゃない？？
+              # "llm.google_genai.api_key": "YOUR_API_KEY",  KEYの書き方はこっちじゃない？？
+              # "llm.google_genai.model": "gemini-pro"       KEYの書き方はこっちじゃない？？
           },
         "llm_C":
           {

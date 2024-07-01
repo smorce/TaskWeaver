@@ -295,24 +295,6 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
 
         """
 
-        print("デバッグ1")
-        try:
-            print("cur_step")
-            print(self.cur_step)
-            print()
-        except Exception:
-            print("cur_step はなかった")
-            print()
-
-        try:
-            print("extra")
-            print(extra)
-            print()
-        except Exception:
-            print("extra はなかった")
-            print()
-
-
         if type == PostEventType.post_start:
             # ポスト開始イベントの処理
             self.reset_cur_step()
@@ -542,6 +524,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         elif a_type == AttachmentType.web_search_text:
             # 以下の中身は [AttachmentType.plan, AttachmentType.init_plan] と全く同じ
             # タイトルを弄りたかったので web_search_text を追加した
+            # . が入っていると勝手に index が振られるようになっている
             items: List[str] = []
             lines = msg.split("\n")
             for idx, row in enumerate(lines):

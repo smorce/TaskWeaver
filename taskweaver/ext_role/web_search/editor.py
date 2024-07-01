@@ -4,6 +4,8 @@ from .utils.llms import call_model
 from langgraph.graph import StateGraph, END
 import asyncio
 import json
+import re
+from taskweaver.memory.attachment import AttachmentType
 
 import sys
 import os
@@ -40,9 +42,11 @@ class EditorAgent:
         post_proxy       = research_state.get("post_proxy")          # 追加
         max_sections = self.task.get("max_sections")
         # 追加
-        post_proxy.update_message(
-            f"EditorAgent: 初期調査に基づいてレポートの概要と構成を計画中…\n"
+        post_proxy.update_attachment(
+            message=f"EditorAgent: 初期調査に基づいてレポートの概要と構成を計画中…\n",
+            type=AttachmentType.web_search_text,
         )
+
         prompt = [{
             "role": "system",
             "content": "You are a research director. Your goal is to oversee the research project"
@@ -63,7 +67,19 @@ class EditorAgent:
 
         print_agent_output(f"Planning an outline layout based on initial research...", agent="EDITOR")
         response = call_model(prompt=prompt, model=self.task.get("model"), response_format="json")
-        plan = json.loads(response)
+        print("デバッグ。JSON形式か？？  response")
+        print(response)
+
+        # 正規表現を使って{}の中身を抽出する
+        match = re.search(r'\{.*\}', response, re.DOTALL)
+
+        if match:
+            json_str = match.group(0)
+            # JSONをパースしてPythonの辞書型に変換する
+            plan = json.loads(json_str)
+            print(plan)
+        else:
+            print("plan_research: JSON形式のデータが見つかりませんでした。")
 
         return {
             "title": plan.get("title"),
@@ -88,8 +104,9 @@ class EditorAgent:
         title = research_state.get("title")
         post_proxy = research_state.get("post_proxy")          # 追加
         # 追加
-        post_proxy.update_message(
-            f"EditorAgent: 各アウトライントピックについて並行してリサーチ中…\n"
+        post_proxy.update_attachment(
+            message=f"EditorAgent: 各アウトライントピックについて並行してリサーチ中…\n",
+            type=AttachmentType.web_search_text,
         )
         workflow = StateGraph(DraftState)
 
@@ -115,8 +132,6 @@ class EditorAgent:
                         for query in queries]
         # asyncio.gather なので全部のタスクが終了するまで次には行かない
         research_results = [result['draft'] for result in await asyncio.gather(*final_drafts)]
-        if "post_proxy" not in research_results:
-            print("デバッグ: post_proxyというキーが存在しないため代入します。research_results の中身が分からないので一旦この処理を入れた")
-            research_results["post_proxy"] = post_proxy                  # 追加
 
-        return {"research_data": research_results}
+        # リターンするときに、ResearchState に対応する Kye の Value が更新される
+        return {"research_data": research_results, "post_proxy":post_proxy}

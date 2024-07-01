@@ -83,17 +83,17 @@ class GPTResearcher:
             # この関数の目的は、出力をWebSocketを通じてストリームすることです。また、条件に応じてログに出力することもできます。
             # websocket オブジェクトの send_json メソッドを使用して、type と output を含むJSONデータを非同期で送信します。WebSocket通信が完了するまで待機します。
             await stream_output("logs", self.agent, self.websocket)
-            print("デバッグ stream_output done!")
+            print("デバッグ stream_output done!")    # ここは確認できた
 
         # If specified, the researcher will use the given urls as the context for the research.
         if self.source_urls:
-            print("デバッグ1 source_urls YES")
+            print("デバッグ1 source_urls YES")    # こっちはないっぽい
             self.context = await self.get_context_by_urls(self.source_urls)
             print("デバッグ1 source_urls done!")
         else:
-            print("デバッグ2 source_urls NO")
+            print("デバッグ2 source_urls NO")    # ここは確認できた
             self.context = await self.get_context_by_search(self.query)
-            print("デバッグ2 source_urls done!")
+            print("デバッグ2 source_urls done!")    # ここは確認できた
 
         time.sleep(2)
 
@@ -107,7 +107,7 @@ class GPTResearcher:
             str: The report
         """
         if self.verbose:
-            await stream_output("logs", f"✍️ Writing summary for research task: {self.query}...", self.websocket)
+            await stream_output("logs", f"✍️ Writing summary for research task: {self.query}...", self.websocket)   # ここは確認できた
 
         if self.report_type == "custom_report":
             self.role = self.cfg.agent_role if self.cfg.agent_role else self.role
@@ -154,9 +154,12 @@ class GPTResearcher:
             context: List of context
         """
         context = []
+        print("デバッグ get_context_by_search関数 前1")
         # Generate Sub-Queries including original query
         sub_queries = await get_sub_queries(query, self.role, self.cfg, self.parent_query, self.report_type)
+        print("デバッグ get_context_by_search関数 後1")
 
+        print("デバッグ get_context_by_search関数 前2")
         # If this is not part of a sub researcher, add original query to research for better results
         if self.report_type != "subtopic_report":
             sub_queries.append(query)
@@ -165,9 +168,12 @@ class GPTResearcher:
             await stream_output("logs",
                                 f"🧠 I will conduct my research based on the following queries: {sub_queries}...",
                                 self.websocket)
+        print("デバッグ get_context_by_search関数 後2")
 
+        print("デバッグ get_context_by_search関数 前3")
         # Using asyncio.gather to process the sub_queries asynchronously
         context = await asyncio.gather(*[self.process_sub_query(sub_query) for sub_query in sub_queries])
+        print("デバッグ get_context_by_search関数 後3")
         return context
 
     async def process_sub_query(self, sub_query: str):
@@ -179,11 +185,15 @@ class GPTResearcher:
         Returns:
             str: The context gathered from search
         """
+        print("デバッグ process_sub_query関数 前1")
         if self.verbose:
             await stream_output("logs", f"\n🔎 Running research for '{sub_query}'...", self.websocket)
+        print("デバッグ process_sub_query関数 後1")
 
+        print("デバッグ process_sub_query関数 前2")
         scraped_sites = await self.scrape_sites_by_query(sub_query)
         content = await self.get_similar_content_by_query(sub_query, scraped_sites)
+        print("デバッグ process_sub_query関数 後2")
 
         if content and self.verbose:
             await stream_output("logs", f"📃 {content}", self.websocket)

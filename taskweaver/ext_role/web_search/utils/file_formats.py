@@ -1,3 +1,4 @@
+import os
 import subprocess
 import aiofiles
 import urllib
@@ -6,6 +7,8 @@ import mistune
 from md2pdf.core import md2pdf
 from docx import Document
 from htmldocx import HtmlToDocx
+import tempfile
+
 
 
 async def write_to_file(filename: str, text: str) -> None:
@@ -50,11 +53,18 @@ async def write_md_to_pdf(text: str, path: str) -> str:
     task = uuid.uuid4().hex
     file_path = f"{path}/{task}.pdf"
 
+
+    # 現在のスクリプトのディレクトリを取得
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # pdf_styles.css のパスを生成
+    pdf_styles_path = os.path.join(script_dir, 'pdf_styles.css')
+
+
     try:
         md2pdf(file_path,
                md_content=text,
                # md_file_path=f"{file_path}.md",
-               css_file_path="./agents/utils/pdf_styles.css",
+               css_file_path=pdf_styles_path,
                base_url=None)
         print(f"Report written to {file_path}")
     except Exception as e:
@@ -109,7 +119,7 @@ async def write_md_to_ppt(text: str, path: str) -> str:
 
     ★Marpに変換するためのプロンプト。LLMで変換が必要なら参考にする
         https://zenn.dev/yuarth/articles/2d0c77bef9791a
-    
+
     ★PCに以下をインストールしておく(グローバルインストール)
         npm install -g @marp-team/marp-cli
     """
@@ -132,7 +142,7 @@ async def write_md_to_ppt(text: str, path: str) -> str:
                 tmp_path = tmp.name
                 tmp.write(markdown_content.encode('utf-8'))
                 tmp.close()
-            
+
                 # Marp CLIを呼び出してpptxを生成
                 command = ['marp', tmp_path, '-o', output_path]
                 # subprocess.run を使用してコマンドを実行
@@ -140,15 +150,51 @@ async def write_md_to_ppt(text: str, path: str) -> str:
                 # 一時ファイルを削除
                 os.unlink(tmp_path)
                 print(f"Slide generated successfully: {output_path}")
-        
+
         except subprocess.CalledProcessError as e:
             print(f"Failed to generate slides: {e}")
 
     try:
-        
+
         generate_slides(text, file_path)
 
         print(f"Report written to {file_path}")
+
+
+        # ------------------------------------------
+        # マウントしたローカルディレクトリにコピーする
+        # ------------------------------------------
+        import shutil
+        import glob
+
+        # コピー先のローカルディレクトリパスを指定
+        destination_dir = os.path.join("..", "..", "outputs")
+
+        # outputsディレクトリ内のrun_*にマッチするディレクトリを取得
+        source_dirs = glob.glob(os.path.join("outputs", "run_*"))
+
+        # 各ディレクトリの中身をコピー
+        for source_dir in source_dirs:
+            for file_name in os.listdir(source_dir):
+                full_file_name = os.path.join(source_dir, file_name)
+                if os.path.isfile(full_file_name):
+                    shutil.copy(full_file_name, destination_dir)
+
+        print("コピー完了！")
+
+
+        # # ディレクトリ構造を出力する関数
+        # def print_directory_structure(directory, indent=0):
+        #     for root, dirs, files in os.walk(directory):
+        #         level = root.replace(directory, '').count(os.sep)
+        #         indent = ' ' * 4 * level
+        #         print(f"{indent}{os.path.basename(root)}/")
+        #         sub_indent = ' ' * 4 * (level + 1)
+        #         for f in files:
+        #             print(f"{sub_indent}{f}")
+
+        # print_directory_structure("/app")
+
 
         encoded_file_path = urllib.parse.quote(f"{file_path}.pptx")
         return encoded_file_path
