@@ -7,6 +7,7 @@ import markdown
 from gpt_researcher.master.prompts import *
 from gpt_researcher.scraper.scraper import Scraper
 from gpt_researcher.utils.llm import *
+from gpt_researcher.utils.enum import ReportType
 
 def get_retriever(retriever):
     """
@@ -98,6 +99,8 @@ async def get_sub_queries(query: str, agent_role_prompt: str, cfg, parent_query:
 
     print("デバッグ fast_llm_model: ", cfg.fast_llm_model)
     print("デバッグ llm_provider: ", cfg.llm_provider)
+    print("デバッグ parent_query。これはちゃんと入っているはずでプランナーから渡されたクエリのはず。初期計画のときだけ空のはず: ", parent_query)
+    print("デバッグ query: ", query)
 
 
 
@@ -121,30 +124,39 @@ async def get_sub_queries(query: str, agent_role_prompt: str, cfg, parent_query:
     # )
     # sub_queries = json.loads(response)
 
+
+    if report_type == ReportType.DetailedReport.value or report_type == ReportType.SubtopicReport.value:
+        # サブトピックはこっち。元のクエリである parent_query を入れないと訳わからないプロンプトになってしまう。
+        task = f"{parent_query} - {query}"
+        # ★ 初期計画じゃない方は一旦なしにしてみる。あった方がよければ共通で AddPrompt を使う。
+        AddPrompt = ""
+    else:
+        # 初期計画はこっち
+        task = query
+        AddPrompt = "\nEnsure that at least one query addresses the task from a scientific perspective, another from a marketing perspective, another from a technology perspective, and another from an academic perspective."
+        # AddPrompt翻訳:少なくとも1つのクエリが科学的観点から、もう1つがマーケティング的観点から、もう1つが技術的観点から、もう1つが学術的観点からタスクを扱っていることを確認する。
+
     # セルフ✗パワー(パワハラ)プロンプトに変えてみる
     SelfPorwerPrompt = f"""You are an advanced AI assistant.
 
-# Main goal:.
-"{query}"
-I would like to complete this task. This is an implicit goal, not the main goal.
-
-To do this, the first thing you need to do is suggest three optimal Google search queries to complete this task.
+### Main Goal
+Write {max_research_iterations} google search queries to search online that form an objective opinion from the following task: "{task}".
 Use the current date if needed: {datetime.now().strftime("%B %d, %Y")}.
-Also include in the queries specified task details such as locations, names, etc.
-Define your main goal as suggesting three optimal Google search queries.
+Also include in the queries specified task details such as locations, names, etc.{AddPrompt}
 
-# Work Steps
-1. break down the main goal into detailed, actionable sub-goals
-2. prepare detailed and actionable sub-goals that help achieve the Main goal
-3. implement the decomposed sub-goals in order, starting with subgoal #1, to achieve the main goal
-4. You are an advanced AI, so each time you implement one of the subgoals, the result looks like a 60 to you, and you consider a modification strategy to make it a 100.
-5. after making corrections based on the correction policy, you start the task for the next sub-goal. 6.
-6. after all subgoals have been implemented without omission, comprehensively check whether the main goal has been achieved or not. 7. after these have been completed, check whether the main goal has been achieved or not.
-After these tasks are completed, the completion is announced to the user. During the completion process, the user is not asked for confirmation, but proceeds on his/her own.
+### Work Steps
+1. Break down the main goal into detailed, actionable sub-goals.
+2. Prepare detailed and actionable sub-goals that help achieve the Main goal.
+3. Implement the decomposed sub-goals in order, starting with sub-goal 1, to achieve the main goal.
+4. You are an advanced AI, so each time you implement one of the sub-goals, the result looks like a 60 to you, and you consider a modification strategy to make it a 100.
+5. After making corrections based on the correction policy, you start the task for the next sub-goal 6.
+6. After all sub-goals have been implemented without omission, comprehensively check whether the main goal has been achieved or not.
+7. After these have been completed, check whether the main goal has been achieved or not.
+After these tasks are completed, the completion is announced to the user. During the completion process, the user is not asked for confirmation, but proceeds on your own.
 
-# Final Outtput
+### Final Outtput
 ```json
-["query 1", "query 2", "query 3"]
+[{max_research_iterations} Queries]
 ```"""
 
     response = await create_chat_completion(
@@ -324,9 +336,16 @@ async def generate_report(
         content = (
             f"{generate_prompt(query, context, cfg.report_format, cfg.total_words)}")
 
+        # print("デバッグ。初期計画を作成するときに使用するプロンプト")
+        # print(query)   # オリジナルクエリ。context にサブクエリ関連の内容が入っているから、これにサブクエリも入れた方が良いと思う。
+        # print()
+        # print(context)  # これはリスト。ちゃんと、サブクエリで検索したWebページの内容になってるっぽい。
+        # print()
+        # print(content)
+
     try:
         report = await create_chat_completion(
-            model=cfg.smart_llm_model,    # ★ファイナルレポートは Pro にしたい。
+            model=cfg.smart_llm_model,    # ★ファイナルレポートは Pro にしたい。初期計画もココでやっている。
             messages=[
                 {"role": "system", "content": f"{agent_role_prompt}"},
                 {"role": "user", "content": content}],

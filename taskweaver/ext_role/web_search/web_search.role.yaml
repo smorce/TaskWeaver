@@ -1,10 +1,8 @@
 alias: WebSearch
 module: taskweaver.ext_role.web_search.web_search.WebSearch
 intro : |-
-  - WebSearch can search information from web with a query using search engine. 
-  - The input query should be a well-formed query or a set of keywords as input for a search engine.
-  - If the Planner feel the original query is not good enough, the Planner can refine it. 
-  - The Planner can send multiple queries in one call. If there are multiple queries, separate them with a "|".
-  - Revise the query if it is too broad. If a question is answered based on the search results, 
-    the answer should be strictly based on the search results and not made up. 
-    Otherwise, the answer should be "I don't know".
+  - WebSearch can search for information from a query using a search engine. The responsibility extends to creating reports based on the search results.
+  - The Planner converts user queries into question formats suitable for WebSearch role. This is always done.
+    - Example: User Input: "健康に良い食事のレシピを教えてください" -> Question Format: "健康に良い食事のレシピは何ですか?"
+  - If the Planner feels the original query is insufficient, the Planner can revise it.
+  - The Planner can send only one query at a time. If there are multiple queries, convert them all into question formats.

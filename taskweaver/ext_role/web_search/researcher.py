@@ -10,7 +10,7 @@ class ResearchAgent:
         pass
 
     async def research(self, query: str, research_report: str = "research_report", parent_query: str = "", verbose=True):
-        # Initialize the researcher
+        """初期計画を立案"""
         # gpt_researcher/master/agent.py
         researcher = GPTResearcher(query=query, report_type=research_report, parent_query=parent_query, verbose=verbose)
         # Conduct research on the given query
@@ -36,16 +36,27 @@ class ResearchAgent:
         print_agent_output(f"Running initial research on the following query: {query}", agent="RESEARCHER")
         # 追加[ update_attachment に修正]
         post_proxy.update_attachment(
-            message=f"ResearchAgent: 初期計画を立案し実行中…\n",
+            message=f"ResearchAgent: 初期計画を立案中…\n",
             type=AttachmentType.web_search_text,
         )
         return {"task": task, "initial_research": await self.research(query=query, verbose=task.get("verbose")), "post_proxy": post_proxy}
 
     async def run_depth_research(self, draft_state: dict):
-        task = draft_state.get("task")
-        topic = draft_state.get("topic")
-        parent_query = task.get("query")
+        """サブトピックの調査"""
+        task = draft_state.get("task")     # task.json
+        topic = draft_state.get("topic")   # サブトピック
+        parent_query = task.get("query")   # プランナーから渡されたクエリ
         verbose = task.get("verbose")
         print_agent_output(f"Running in depth research on the following report topic: {topic}", agent="RESEARCHER")
+        # print("デバッグ run_depth_research関数。3秒間スリープする")
+        # import asyncio
+        # print("task")
+        # print(task)
+        # #→ {'query': 'Claude 3.5 Soonet', 'max_sections': 3, 'publish_formats': {'markdown': True, 'pdf': True, 'docx': True}, 'follow_guidelines': False, 'model': 'google/gemini-flash-1.5', 'guidelines': ['The report MUST be written in APA format', 'Each sub section MUST include supporting sources using hyperlinks. If none exist, erase the sub section or rewrite it to be a part of the previous section', 'The report MUST be written in spanish'], 'verbose': True}
+        # print("サブトピック")
+        # print(topic)             # ちゃんと、サブトピック(アウトライントピック)のリストの中身になっていた
+        # print("parent_query")
+        # print(parent_query)      # プランナーから渡されたクエリー「Claude 3.5 Soonet」になっていた
+        # await asyncio.sleep(3)
         research_draft = await self.run_subtopic_research(parent_query, topic, verbose)
         return {"draft": research_draft}

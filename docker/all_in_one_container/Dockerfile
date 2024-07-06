@@ -53,7 +53,7 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "pydantic" \
     "python-multipart" \
     "markdown" \
-    "tavily-python" \
+    "tavily-python==0.3.3" \
     "arxiv" \
     "PyMuPDF" \
     "jinja2" \
@@ -79,7 +79,7 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "langchain_huggingface>=0.0.1,<0.1" \
     "langchain_together>=0.1,<0.2" \
     "langchain_cohere" \
-    "langgraph"; \
+    "langgraph==0.1.4"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     pip install --no-cache-dir --no-warn-script-location "langchain_mistralai>=0.1,<0.2" \
@@ -89,7 +89,12 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     "langchain_aws"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
-    pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "sentence_transformers"; \
+    pip install --no-cache-dir --no-warn-script-location "markdownify==0.12.1" \
+    "torch==2.3.1" \
+    "transformers==4.42.3"; \
+    fi
+RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
+    pip install --no-cache-dir --no-warn-script-location --default-timeout=1000 "sentence_transformers==3.0.1"; \
     fi
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     python model_downloader.py; \

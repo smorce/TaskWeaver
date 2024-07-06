@@ -7,6 +7,32 @@ from gpt_researcher.master.functions import *
 from gpt_researcher.memory import Memory
 from gpt_researcher.utils.enum import ReportType
 
+"""アップデート案:
+・scrape_sites_by_query メソッド
+search_results["body"] は ペガサス で取得した マークダウンコンテンツ になっているので、このコンテンツを全て Gemini Flash に入れて、サブクエリに関係のありそうな内容を要約として作成してもらう。なければNoneを返してもらう。
+こうすれば、埋め込みモデルを使わずに全部のコンテンツを利用できる。
+高精度・低コスト・高コンテキストウィンドウ の Gemini Flash だからできる案。
+
+# Gemini Flash プロンプト
+=============================================
+### 指示
+Contextを踏まえてSub Queryに対しての要約を提示してください。余計なことは言わずに与えられた情報だけを使って要約を提示してください。
+また、ContextとSub Queryに関連がなければ None と出力してください。
+
+### Sub Query
+{あああ}
+
+### Context
+{search_results["body"]}  ←  [メモ]全コンテンツを使用
+
+理解できたら開始してください！
+=============================================
+
+search_results["body"] は複数あるはずなので、For文を回して複数の要約を生成して、生成した全ての要約を改行で連結させて1つの文字列(all_content)にする。
+scrape_sites_by_query メソッドから返ってきたものが all_content 。
+そして、 process_sub_query メソッドの get_similar_content_by_query は使わないようにして、代わりに process_sub_query では all_content を return させる。
+"""
+
 
 class GPTResearcher:
     """
@@ -48,7 +74,7 @@ class GPTResearcher:
         self.report_prompt = get_prompt_by_report_type(self.report_type)  # this validates the report type
         self.websocket = websocket
         self.cfg = Config(config_path)  # config_path は None でも問題ない。config ディレクトリに config.json があれば上書きされる。
-        self.retriever = get_retriever(self.cfg.retriever)
+        self.retriever = get_retriever(self.cfg.retriever)   # tavily
         self.context = []
         self.source_urls = source_urls
         self.memory = Memory(self.cfg.embedding_provider)
@@ -125,8 +151,8 @@ class GPTResearcher:
             )
         else:
             report = await generate_report(
-                query=self.query,
-                context=self.context,
+                query=self.query,              # ★ 初期計画とサブクエリが一致しなければ、インスタンス変数として self.sub_queries を作成して get_context_by_search メソッドで sub_queries を self.sub_queries に変更し self.query の代わりに self.sub_queries を渡せば良い。self.sub_queries の中にオリジナルクエリも入っているから。 → 多分、なるべく元のクエリに沿ったレポートを作成したい、サブクエリの影響力を下げたいという意図で、ここはオリジナルクエリしか渡していない気がする。一旦、このままで。
+                context=self.context,          # これはリスト
                 agent_role_prompt=self.role,
                 report_type=self.report_type,
                 websocket=self.websocket,
@@ -172,6 +198,7 @@ class GPTResearcher:
 
         print("デバッグ get_context_by_search関数 前3")
         # Using asyncio.gather to process the sub_queries asynchronously
+        # context(list) とは TAVILY.search(sub_query) を使って URL を取得 → BeautifulSoup を使ってクリーンな文字列(Webページの生テキスト)を取得し、そこからサブクエリに関係のありそうなコンテンツを抜き出したもの
         context = await asyncio.gather(*[self.process_sub_query(sub_query) for sub_query in sub_queries])
         print("デバッグ get_context_by_search関数 後3")
         return context
@@ -191,7 +218,7 @@ class GPTResearcher:
         print("デバッグ process_sub_query関数 後1")
 
         print("デバッグ process_sub_query関数 前2")
-        scraped_sites = await self.scrape_sites_by_query(sub_query)
+        scraped_sites = await self.scrape_sites_by_query(sub_query)   # scraped_sites は コンテンツ(辞書)のリスト。[content1, content2, content3 …]
         content = await self.get_similar_content_by_query(sub_query, scraped_sites)
         print("デバッグ process_sub_query関数 後2")
 
@@ -224,10 +251,15 @@ class GPTResearcher:
             sub_query:
 
         Returns:
-            Summary
+            scraped_content_results:
+                辞書のリスト。[{"url": link1, "raw_content": content1}, {"url": link2, "raw_content": content2}, {"url": link3, "raw_content": content3}, …]
+                raw_content は url から BeautifulSoup で取得したクリーンな文字列(サマリーではなくWebページの生テキスト。これはマークダウン化していない。)。
+                → JavaScriptのような動的なコンテンツは BeautifulSoup じゃ取得できない気がするので、search_results["body"] の方を使った方が良いかも。
         """
         # Get Urls
         retriever = self.retriever(sub_query)
+        # ペガサスで search_results["body"] はマークダウンコンテンツにしたけど、使ってないっぽい。search_results["href"] は コンテンツの URL のリスト
+        # search_results["href"] で RAG するために、埋め込みモデルを使って query に関係のありそうなコンテンツを取得している。
         search_results = retriever.search(
             max_results=self.cfg.max_search_results_per_query)
         new_search_urls = await self.get_new_urls([url.get("href") for url in search_results])
@@ -235,15 +267,21 @@ class GPTResearcher:
         # Scrape Urls
         if self.verbose:
             await stream_output("logs", f"🤔 Researching for relevant information...\n", self.websocket)
+        # scraped_content_results は コンテンツ(辞書)のリスト。[content1, content2, content3 …]
+        # content1 は {"url": link, "raw_content": content} という辞書で、url は new_search_urls のうちの1番目。content は その url から BeautifulSoup で取得したクリーンな文字列で、サマリーじゃないし、マークダウン化したものでもなく、Webページの生テキスト。
         scraped_content_results = scrape_urls(new_search_urls, self.cfg)
         return scraped_content_results
 
     async def get_similar_content_by_query(self, query, pages):
+        """
+        埋め込みモデルを使って query に関係のありそうなコンテンツを取得している。コンテンツ全部を使っている訳では無い
+        pages は BeautifulSoup で取得したクリーンな文字列でサマリーじゃないし、マークダウン化したものでもなく、Webページの生テキスト。
+        """
         if self.verbose:
             await stream_output("logs", f"📝 Getting relevant content based on query: {query}...", self.websocket)
         # Summarize Raw Data
         context_compressor = ContextCompressor(
-            documents=pages, embeddings=self.memory.get_embeddings())
+            documents=pages, embeddings=self.memory.get_embeddings())   # multilingual-e5-XXX を使っている
         # Run Tasks
         return context_compressor.get_context(query, max_results=8)
 

@@ -46,6 +46,10 @@ class EditorAgent:
             message=f"EditorAgent: 初期調査に基づいてレポートの概要と構成を計画中…\n",
             type=AttachmentType.web_search_text,
         )
+        post_proxy.update_attachment(
+            message=f"初期調査を表示してみる: {initial_research}",
+            type=AttachmentType.web_search_text,
+        )
 
         prompt = [{
             "role": "system",
@@ -100,7 +104,7 @@ class EditorAgent:
         reviewer_agent = ReviewerAgent()
         reviser_agent = ReviserAgent()
         # --------------------------------------------
-        queries = research_state.get("sections")
+        queries = research_state.get("sections")   # サブトピック(アウトライントピック)のリスト。ちゃんと3つになっていた
         title = research_state.get("title")
         post_proxy = research_state.get("post_proxy")          # 追加
         # 追加
@@ -108,6 +112,15 @@ class EditorAgent:
             message=f"EditorAgent: 各アウトライントピックについて並行してリサーチ中…\n",
             type=AttachmentType.web_search_text,
         )
+        post_proxy.update_attachment(
+            message=f"サブトピック(アウトライントピック)のリストを出してみる。これがおかしい気がする: {queries}",
+            type=AttachmentType.web_search_text,
+        )
+        post_proxy.update_attachment(
+            message=f"これは初期計画及びレポートのタイトル: {title}",
+            type=AttachmentType.web_search_text,
+        )
+
         workflow = StateGraph(DraftState)
 
         workflow.add_node("researcher", research_agent.run_depth_research)

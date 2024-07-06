@@ -61,6 +61,9 @@ class WebExplorer(Role):
         self.config = config
         self.vision_planner = None
         self.driver = None
+        self.logger.info(f"{self.alias} initialized successfully.")
+
+
 
     def initialize(self):
         try:

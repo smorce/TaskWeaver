@@ -117,7 +117,7 @@ async def write_md_to_ppt(text: str, path: str) -> str:
     Returns:
         str: The encoded file path of the generated PPTX.
 
-    ★Marpに変換するためのプロンプト。LLMで変換が必要なら参考にする
+    ★Marpに変換するためのプロンプト。LLMで変換が必要なら参考にする。これはかなり良い
         https://zenn.dev/yuarth/articles/2d0c77bef9791a
 
     ★PCに以下をインストールしておく(グローバルインストール)

@@ -117,7 +117,7 @@ class WebSearch(Role):
         self.output_dir = None
         self.task = None
         self.query = None
-
+        self.logger.info(f"{self.alias} initialized successfully.")
 
 
     def init_research_team(self):

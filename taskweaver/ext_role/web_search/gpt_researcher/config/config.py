@@ -37,10 +37,10 @@ class Config:
         self.memory_backend = os.getenv('MEMORY_BACKEND', "local")
         self.total_words = int(os.getenv('TOTAL_WORDS', 800))
         self.report_format = os.getenv('REPORT_FORMAT', "APA")
-        self.max_iterations = int(os.getenv('MAX_ITERATIONS', 3))
+        self.max_iterations = int(os.getenv('MAX_ITERATIONS', 6))    # これもサブトピック数っぽい。get_sub_queries 関数で使っている
         self.agent_role = os.getenv('AGENT_ROLE', None)
-        self.scraper = os.getenv("SCRAPER", "bs")
-        self.max_subtopics = os.getenv("MAX_SUBTOPICS", 3)
+        self.scraper = os.getenv("SCRAPER", "bs")               # BeautifulSoupScraper
+        self.max_subtopics = os.getenv("MAX_SUBTOPICS", 6)
 
         self.load_config_file()
 

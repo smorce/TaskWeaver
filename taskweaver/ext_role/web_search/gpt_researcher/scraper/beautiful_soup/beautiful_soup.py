@@ -9,9 +9,13 @@ class BeautifulSoupScraper:
 
     def scrape(self):
         """
+        このメソッドは、WebページのHTMLコンテンツをクリーンにし、テキスト情報のみを抽出するために使用されます。
+        スクリプトやスタイルなどの不要な要素を削除し、改行や余分な空白を整えて、読みやすいテキストとして返しています。
+        これはクリーンな文字列が返される。
+
         This function scrapes content from a webpage by making a GET request, parsing the HTML using
         BeautifulSoup, and extracting script and style elements before returning the cleaned content.
-        
+
         Returns:
           The `scrape` method is returning the cleaned and extracted content from the webpage specified
         by the `self.link` attribute. The method fetches the webpage content, removes script and style
@@ -36,7 +40,7 @@ class BeautifulSoupScraper:
         except Exception as e:
             print("Error! : " + str(e))
             return ""
-        
+
     def get_content_from_url(self, soup):
         """Get the text from the soup
 
