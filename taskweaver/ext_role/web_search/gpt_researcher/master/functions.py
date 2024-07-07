@@ -99,7 +99,7 @@ async def get_sub_queries(query: str, agent_role_prompt: str, cfg, parent_query:
 
     print("デバッグ fast_llm_model: ", cfg.fast_llm_model)
     print("デバッグ llm_provider: ", cfg.llm_provider)
-    print("デバッグ parent_query。これはちゃんと入っているはずでプランナーから渡されたクエリのはず。初期計画のときだけ空のはず: ", parent_query)
+    print("デバッグ parent_query。これはちゃんと入っているはずでプランナーから渡されたクエリのはず。初期計画のときだけ空のはず: ", parent_query)  # 合ってた
     print("デバッグ query: ", query)
 
 
@@ -159,42 +159,63 @@ After these tasks are completed, the completion is announced to the user. During
 [{max_research_iterations} Queries]
 ```"""
 
-    response = await create_chat_completion(
-        model=cfg.fast_llm_model,                            # smart_llm_model から fast_llm_model に変更した。検索クエリを考えるのは 分析力の優れた Gemini なら得意だと思うので Flash でもいけるかも。無理なら smart_llm_model に戻す
-        messages=[
-            {"role": "system", "content": f"{agent_role_prompt}"},
-            {"role": "user", "content": SelfPorwerPrompt}],
-        temperature=0,
-        llm_provider=cfg.llm_provider,
-        max_tokens=cfg.fast_token_limit
-    )
-    print("response:", response)
+    # リトライする
+    attempts = 0
+    max_attempts = 3
+    success = False
+
+    # 最大3回までリトライする
+    while attempts < max_attempts and not success:
+
+        try:
+            response = await create_chat_completion(
+                model=cfg.fast_llm_model,                            # smart_llm_model から fast_llm_model に変更した。検索クエリを考えるのは 分析力の優れた Gemini なら得意だと思うので Flash でもいけるかも。無理なら smart_llm_model に戻す
+                messages=[
+                    {"role": "system", "content": f"{agent_role_prompt}"},
+                    {"role": "user", "content": SelfPorwerPrompt}],
+                temperature=1.0,                                     # 1.0 に変更
+                llm_provider=cfg.llm_provider,
+                max_tokens=cfg.fast_token_limit
+            )
+            print("response:", response)
 
 
-    def get_final_output(text):
-        keyword = "Final Output"
-        index = text.find(keyword)
-        if index != -1:
-            return text[index + len(keyword):].strip()
-        else:
-            return None
-    # Final Output以降の文字列を取得
-    response = get_final_output(response)
-    print("Final Output以降", response)
+            def get_final_output(text):
+                keyword = "Final Output"
+                index = text.find(keyword)
+                if index != -1:
+                    return text[index + len(keyword):].strip()
+                else:
+                    return None
+            # Final Output以降の文字列を取得
+            response = get_final_output(response)
+            print("Final Output以降", response)
 
 
-    import re
-    # Extract the JSON part from the text
-    json_pattern = re.compile(r'```json\n(\[.*?\])\n', re.DOTALL)
-    match = json_pattern.search(response)
+            import re
+            # Extract the JSON part from the text
+            json_pattern = re.compile(r'```json\n(\[.*?\])\n', re.DOTALL)
+            match = json_pattern.search(response)
 
-    if match:
-        extracted_json = match.group(1)
-        print("extracted_json:", extracted_json)
-    else:
-        print("レスポンスにJSONデータがなかった。")
+            if match:
+                extracted_json = match.group(1)
+                print("extracted_json:", extracted_json)
+            else:
+                raise ValueError("レスポンスにJSONデータがなかった。")
 
-    sub_queries = json.loads(extracted_json)
+            sub_queries = json.loads(extracted_json)
+            success = True
+
+        except Exception as e:
+            print(f"エラー: {e}. サブクエリの生成に失敗しました。リトライ中... ({attempts + 1}/{max_attempts})")
+            attempts += 1
+
+
+    if not success:
+        raise ValueError("サブクエリの生成に失敗しました。最大リトライ回数を超えました。")
+
+
+    print()
     print("JSONでパースした内容")
     print(sub_queries)
 

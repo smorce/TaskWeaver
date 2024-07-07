@@ -108,6 +108,8 @@ RUN chmod +x entrypoint.sh
 COPY docker/all_in_one_container/entrypoint_chainlit.sh entrypoint_chainlit.sh
 RUN chmod +x entrypoint_chainlit.sh
 COPY playground playground
+# 新しいファイルサーバースクリプトをコピー
+COPY scripts/file_server.py file_server.py
 
 ENV EXECUTION_SERVICE_KERNEL_MODE="local"
 

@@ -24,13 +24,18 @@ class ChatOpenRouter(ChatOpenAI):
     model_name: str
 
     def __init__(self,
-                model_name: str,
-                openai_api_key: Optional[str] = None,
-                openai_api_base: str = "https://openrouter.ai/api/v1",
-                **kwargs):
+                 model_name: str,
+                 openai_api_key: Optional[str] = None,
+                 openai_api_base: str = "https://openrouter.ai/api/v1",
+                 model_kwargs: Optional[dict] = None,
+                 **kwargs):
         # openai_api_key = openai_api_key or config.get('openrouter_api_key')
         # web_search_config.yaml から読み込むようにしていたが、環境変数から読み込むように変更
         openai_api_key = openai_api_key or os.getenv("OPENROUTER_API_KEY")
+
+        # `model_kwargs`を`kwargs`に追加
+        if model_kwargs:
+            kwargs['model_kwargs'] = model_kwargs
 
         super().__init__(openai_api_base=openai_api_base,
                         openai_api_key=openai_api_key,
@@ -39,11 +44,9 @@ class ChatOpenRouter(ChatOpenAI):
 
 def call_model(prompt: list, model: str, max_retries: int = 2, response_format: str = None) -> str:
 
-    optional_params = {}
+    model_kwargs = {}
     if response_format == 'json':
-        optional_params = {
-            "response_format": {"type": "json_object"}
-        }
+        model_kwargs["response_format"] = {"type": "json_object"}
 
     lc_messages = convert_openai_messages(prompt)
     # response = ChatOpenAI(model=model, max_retries=max_retries, model_kwargs=optional_params).invoke(lc_messages).content
@@ -56,7 +59,7 @@ def call_model(prompt: list, model: str, max_retries: int = 2, response_format: 
     # model: "openai/gpt-3.5-turbo-0125"  # 16k
     # model: "google/gemini-flash-1.5"    # 本家APIじゃないので有料だけど一旦これで。ただし、ChatGoogleGenerativeAI を使えば本家APIを使える。
     # model: "anthropic/claude-3-haiku"
-    llm = ChatOpenRouter(model_name=model, max_retries=max_retries, **optional_params)
+    llm = ChatOpenRouter(model_name=model, max_retries=max_retries, model_kwargs=model_kwargs)
 
     # 「StrOutputParser」は、文字列として出力するパーサーです。
     parser = StrOutputParser()
